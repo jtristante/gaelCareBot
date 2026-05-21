@@ -16,6 +16,8 @@ WELCOME_MSG = (
 # Help message listing all commands.
 HELP_MSG = (
     "📋 **Comandos disponibles:**\n\n"
+    "/start — Mensaje de bienvenida e instrucciones\n"
+    "/help — Mostrar esta ayuda\n"
     "/agregar `<cantidad>` `[notas]` — Registrar leche extraída hoy\n"
     "/consumir `<cantidad>` `<DD/MM/YYYY>` `[notas]` — Registrar leche consumida\n"
     "/stock — Ver historial completo\n"
