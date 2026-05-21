@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 from datetime import datetime
 
@@ -30,29 +31,30 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_html(ERROR_NO_ENTRIES)
         return
 
+    header_row = f"{'Cantidad':>8} │ {'Fecha/Hora':^14} │ {'Usuario':<20}"
+    separator = f"{'─'*8}─┼─{'─'*14}─┼─{'─'*20}"
+
     rows = []
     for entry in entries:
         dt = datetime.fromisoformat(entry["fecha_hora"])
         fecha_str = dt.strftime("%d/%m %H:%M")
 
-        tipo_str = "+ENTRADA" if entry["tipo"] == "ENTRADA" else "-SALIDA"
         cantidad_str = f"{entry['cantidad']}ml"
-        responsable = entry["username"] or "\u2014"
-        notas = entry["notas"] or "\u2014"
+        responsable = html.escape(entry["username"] or "\u2014")
 
         rows.append(
-            f"{entry['id']:>3} | {fecha_str:<12} | {tipo_str:<13} "
-            f"| {cantidad_str:<8} | {responsable:<12} | {notas}"
+            f"{cantidad_str:>8} │ {fecha_str:^14} │ {responsable:<20}"
         )
 
     table_content = "\n".join(rows)
-    full_message = f"{TABLE_HEADER}\n\n<pre>{table_content}</pre>"
+    title = TABLE_HEADER.split("<pre>")[0].strip()
+    full_message = f"{title}\n\n<pre>{header_row}\n{separator}\n{table_content}</pre>"
 
     # Telegram message limit is 4096 characters
     if len(full_message) > 4096:
         trunc_suffix = "\n... y {remaining} m\u00e1s..."
-        header_overhead = len(TABLE_HEADER) + len("\n\n<pre></pre>")
-        available = 4096 - header_overhead - 60
+        prefix = f"{title}\n\n<pre>{header_row}\n{separator}\n"
+        available = 4096 - len(prefix) - 60
 
         fitting = []
         current = 0
@@ -66,7 +68,7 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         remaining = len(entries) - len(fitting)
         table_content = "\n".join(fitting)
         full_message = (
-            f"{TABLE_HEADER}\n\n<pre>{table_content}"
+            f"{prefix}{table_content}"
             f"{trunc_suffix.format(remaining=remaining)}</pre>"
         )
 

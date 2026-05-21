@@ -15,11 +15,11 @@ WELCOME_MSG = (
 
 # Help message listing all commands.
 HELP_MSG = (
-    "📋 **Comandos disponibles:**\n\n"
+    "📋 <b>Comandos disponibles:</b>\n\n"
     "/start — Mensaje de bienvenida e instrucciones\n"
     "/help — Mostrar esta ayuda\n"
-    "/agregar `<cantidad>` `[notas]` — Registrar leche extraída hoy\n"
-    "/consumir `<cantidad>` `<DD/MM/YYYY>` `[notas]` — Registrar leche consumida\n"
+    "/agregar <code>&lt;cantidad&gt;</code> <code>[notas]</code> — Registrar leche extraída hoy\n"
+    "/consumir <code>&lt;cantidad&gt;</code> <code>&lt;DD/MM/YYYY&gt;</code> <code>[notas]</code> — Registrar leche consumida\n"
     "/stock — Ver historial completo\n"
     "/total — Ver stock total disponible\n"
     "/editar — Editar una entrada existente\n"
@@ -116,8 +116,8 @@ SUMMARY_NO_ACTIVITY = "Sin actividad registrada."
 
 # Header row for the stock history table.
 TABLE_HEADER = (
-    "🗓️ Historial de stock:\n\n"
-    "`ID  Fecha        Tipo     Cantidad  Responsable  Notas`"
+    "<b>🗓️ Historial de stock</b>\n\n"
+    "<pre>ID  Fecha        Tipo     Cantidad  Responsable  Notas</pre>"
 )
 
 # ── Inline button labels ────────────────────────────────────────────────────

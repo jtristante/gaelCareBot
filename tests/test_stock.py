@@ -6,7 +6,7 @@ import pytest
 
 from src.auth import init_auth
 from src.handlers.stock import stock_command
-from src.messages import ERROR_NO_ENTRIES, TABLE_HEADER
+from src.messages import ERROR_NO_ENTRIES
 
 pytestmark = pytest.mark.asyncio
 
@@ -28,7 +28,7 @@ async def test_stock_empty(db, mock_update, mock_context, auth_init):
 
 
 async def test_stock_with_entries(db, mock_update, mock_context, auth_init):
-    """With 3 entries, the handler should display them formatted in a table."""
+    """With 3 entries, display them in a 3-column table."""
     db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", "Nota 1")
     db.add_entry("ENTRADA", 150, "2026-05-19T11:00:00", 123, "test_user", None)
     db.add_entry("SALIDA", 100, "2026-05-19T12:00:00", 456, "other_user", None)
@@ -40,29 +40,24 @@ async def test_stock_with_entries(db, mock_update, mock_context, auth_init):
     mock_update.message.reply_html.assert_awaited_once()
     call_args = mock_update.message.reply_html.call_args[0][0]
 
-    assert "🗓️ Historial de stock:" in call_args
-    assert "+ENTRADA" in call_args
-    assert "-SALIDA" in call_args
+    assert "<b>🗓️ Historial de stock</b>" in call_args
     assert "200ml" in call_args
     assert "150ml" in call_args
     assert "100ml" in call_args
     assert "test_user" in call_args
     assert "other_user" in call_args
-    assert "Nota 1" in call_args
     assert "📭 No hay entradas registradas." not in call_args
     assert len(call_args) <= 4096
 
 
 async def test_stock_pagination(db, mock_update, mock_context, auth_init):
-    """With many long-nota entries, the response should truncate."""
-    long_nota = (
-        "Nota larga para ocupar más espacio "
-        "en la tabla de historial de stock"
-    )
-    for i in range(35):
+    """With many entries, the response should truncate."""
+    for i in range(120):
+        hour = 10 + i // 60
+        minute = i % 60
         db.add_entry(
-            "ENTRADA", 100, f"2026-05-19T10:{i:02d}:00",
-            123, "test_user", long_nota,
+            "ENTRADA", 100, f"2026-05-19T{hour:02d}:{minute:02d}:00",
+            123, "test_user", None,
         )
 
     mock_context.bot_data["db"] = db
@@ -75,3 +70,63 @@ async def test_stock_pagination(db, mock_update, mock_context, auth_init):
     assert "... y " in call_args
     assert "más..." in call_args
     assert len(call_args) <= 4096
+
+
+async def test_stock_table_has_three_columns(db, mock_update, mock_context, auth_init):
+    """Message contains Cantidad, Fecha/Hora, Usuario as visible headers."""
+    db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", None)
+
+    mock_context.bot_data["db"] = db
+
+    await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()
+    call_args = mock_update.message.reply_html.call_args[0][0]
+
+    assert "Cantidad" in call_args
+    assert "Fecha/Hora" in call_args
+    assert "Usuario" in call_args
+
+
+async def test_stock_html_escapes_user_data(db, mock_update, mock_context, auth_init):
+    """Usernames with HTML special chars are escaped."""
+    db.add_entry(
+        "ENTRADA", 200, "2026-05-19T10:00:00", 123,
+        "<script>alert('xss')</script>", None,
+    )
+
+    mock_context.bot_data["db"] = db
+
+    await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()
+    call_args = mock_update.message.reply_html.call_args[0][0]
+
+    assert "&lt;script&gt;" in call_args
+    assert "<script>" not in call_args
+
+
+async def test_stock_uses_pre_tags(db, mock_update, mock_context, auth_init):
+    """Message uses <pre> tags for monospace formatting."""
+    db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", None)
+
+    mock_context.bot_data["db"] = db
+
+    await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()
+    call_args = mock_update.message.reply_html.call_args[0][0]
+
+    assert "<pre>" in call_args
+    assert "</pre>" in call_args
+
+
+async def test_stock_uses_html_parse_mode(db, mock_update, mock_context, auth_init):
+    """Handler calls reply_html (HTML parse mode)."""
+    db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", None)
+
+    mock_context.bot_data["db"] = db
+
+    await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()

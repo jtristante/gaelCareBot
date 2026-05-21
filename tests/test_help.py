@@ -21,7 +21,7 @@ async def test_help_authorized(authorized_update, mock_context):
     """Authorized user should receive HELP_MSG."""
     await help_command(authorized_update, mock_context)
     authorized_update.message.reply_text.assert_called_once_with(
-        HELP_MSG, parse_mode="Markdown"
+        HELP_MSG, parse_mode="HTML"
     )
 
 

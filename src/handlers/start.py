@@ -22,5 +22,5 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     """
     await update.message.reply_text(
         f"{WELCOME_MSG}\n\n{HELP_MSG}",
-        parse_mode="Markdown",
+        parse_mode="HTML",
     )

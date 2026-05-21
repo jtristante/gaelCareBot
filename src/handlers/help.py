@@ -20,4 +20,4 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     Sends the list of available commands with descriptions.
     Only accessible to authorized users via the @authorized_only decorator.
     """
-    await update.message.reply_text(HELP_MSG, parse_mode="Markdown")
+    await update.message.reply_text(HELP_MSG, parse_mode="HTML")
