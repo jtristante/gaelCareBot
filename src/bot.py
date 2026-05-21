@@ -21,6 +21,7 @@ from src.handlers.eliminar import eliminar_conv_handler
 from src.handlers.error import error_handler
 from src.handlers.start import start_command
 from src.handlers.stock import stock_command
+from src.handlers.help import help_command
 from src.handlers.total import total_command
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ def main() -> None:
     application.bot_data["db"] = db
 
     application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("agregar", agregar_command))
     application.add_handler(CommandHandler("consumir", consumir_command))
     application.add_handler(CommandHandler("stock", stock_command))
