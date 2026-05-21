@@ -1,0 +1,9 @@
+services:
+  gaelcarebot:
+    build: .
+    container_name: gaelcarebot
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
