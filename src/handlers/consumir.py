@@ -14,7 +14,6 @@ from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, Call
 from src.auth import authorized_only
 from src.messages import (
     MSG_CONSUMED,
-    MSG_REVERSED,
     MSG_CANCELLED,
     MSG_SELECT_ENTRY,
     MSG_CONFIRM_DELETE,
@@ -331,7 +330,25 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 (entry_id,)
             )
             db.conn.commit()
-            await query.edit_message_text(MSG_REVERSED.format(entry_id=entry_id))
+
+            entry = db.get_entry(entry_id)
+            if entry and entry.get("fecha_hora"):
+                fecha_parts = entry["fecha_hora"][:10].split("-")
+                formatted_date = f"{fecha_parts[2]}/{fecha_parts[1]}/{fecha_parts[0]}"
+            else:
+                formatted_date = "N/A"
+            cantidad = entry["cantidad"] if entry else 0
+
+            # Try to send daily summary notification (gracefully handle if not available)
+            if _SEND_DAILY_SUMMARY_AVAILABLE and send_daily_summary is not None:
+                try:
+                    await send_daily_summary(context.bot, db)
+                except Exception as e:
+                    logger.warning("Failed to send daily summary: %s", e)
+
+            await query.edit_message_text(
+                MSG_CONSUMED.format(cantidad=cantidad, fecha=formatted_date)
+            )
         else:
             await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
 

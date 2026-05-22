@@ -266,8 +266,8 @@ class MilkDatabase:
                 break
 
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, fecha_hora, user_id, username, notas)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO transactions (tipo, cantidad, fecha_hora, user_id, username, notas, consumed_at)
+               VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
             ("SALIDA", cantidad, fecha_hora, user_id, username, notas),
         )
         self.conn.commit()

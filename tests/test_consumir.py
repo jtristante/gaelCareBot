@@ -23,7 +23,6 @@ from src.handlers.consumir import (
 )
 from src.messages import (
     MSG_CONSUMED,
-    MSG_REVERSED,
     MSG_CANCELLED,
     MSG_SELECT_ENTRY,
     ERROR_INVALID_AMOUNT,
@@ -385,6 +384,34 @@ class TestConsumirCommandArgsMode:
         # Verify returned ConversationHandler.END
         assert result == ConversationHandler.END
 
+    @pytest.mark.asyncio
+    async def test_consumir_fifo_salida_has_consumed_at(self, db):
+        """Test that consume_fifo() creates a SALIDA entry with consumed_at set.
+
+        This is a pure DB-level test (no Telegram mocks). It uses the real
+        in-memory MilkDatabase fixture directly.
+
+        Verifies consumed_at is set by consume_fifo() on the new SALIDA entry.
+        """
+        db.add_entry(
+            "ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user", None,
+        )
+
+        db.consume_fifo(
+            cantidad=50,
+            fecha_hora="2026-05-19T12:00:00",
+            user_id=123,
+        )
+
+        row = db.conn.execute(
+            "SELECT * FROM transactions WHERE tipo = 'SALIDA' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+
+        assert row is not None
+        assert row["consumed_at"] is not None, (
+            "consumed_at is NULL — consume_fifo() does not set consumed_at on the SALIDA entry"
+        )
+
 
 class TestReversalMode:
     """Tests for the /consumir command no-args mode (reversal)."""
@@ -538,6 +565,14 @@ class TestReversalMode:
 
         ctx = setup_context(user_data={"reverse_entry_id": 1})
         mock_db.update_entry.return_value = True
+        mock_db.get_entry.return_value = {
+            "id": 1,
+            "tipo": "ENTRADA",
+            "cantidad": 100,
+            "fecha_hora": "2026-05-19T10:00:00",
+            "notas": "Test notes",
+            "username": "test_user"
+        }
 
         result = await confirm_reversal(update, ctx)
 
@@ -555,7 +590,7 @@ class TestReversalMode:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_REVERSED.format(entry_id=1)
+            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -633,6 +668,71 @@ class TestReversalMode:
 
         # Verify error message
         update.callback_query.edit_message_text.assert_called_once_with(ERROR_ENTRY_NOT_FOUND)
+
+        # Verify returned ConversationHandler.END
+        assert result == ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_reversal_sends_notification(self, setup_update, setup_context, mock_db, setup_callback_query):
+        """Test that reversal triggers a daily summary notification."""
+        update = setup_update(123)
+        update.callback_query = setup_callback_query("confirm")
+
+        ctx = setup_context(user_data={"reverse_entry_id": 1})
+        mock_db.update_entry.return_value = True
+        mock_db.get_entry.return_value = {
+            "id": 1,
+            "tipo": "ENTRADA",
+            "cantidad": 100,
+            "fecha_hora": "2026-05-19T10:00:00",
+            "notas": "Test notes",
+            "username": "test_user"
+        }
+
+        with patch("src.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+            result = await confirm_reversal(update, ctx)
+
+            # Verify notification was sent
+            mock_notify.assert_called_once_with(ctx.bot, mock_db)
+
+        # Verify success message
+        update.callback_query.edit_message_text.assert_called_once_with(
+            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+        )
+
+        # Verify returned ConversationHandler.END
+        assert result == ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_reversal_notification_failure_does_not_block(self, setup_update, setup_context, mock_db, setup_callback_query):
+        """Test that reversal succeeds even if notification fails."""
+        update = setup_update(123)
+        update.callback_query = setup_callback_query("confirm")
+
+        ctx = setup_context(user_data={"reverse_entry_id": 1})
+        mock_db.update_entry.return_value = True
+        mock_db.get_entry.return_value = {
+            "id": 1,
+            "tipo": "ENTRADA",
+            "cantidad": 100,
+            "fecha_hora": "2026-05-19T10:00:00",
+            "notas": "Test notes",
+            "username": "test_user"
+        }
+
+        with patch("src.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+            mock_notify.side_effect = Exception("API error")
+
+            result = await confirm_reversal(update, ctx)
+
+            # Verify update still happened
+            mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
+            mock_db.conn.commit.assert_called_once()
+
+            # Verify success message still shown despite notification failure
+            update.callback_query.edit_message_text.assert_called_once_with(
+                MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+            )
 
         # Verify returned ConversationHandler.END
         assert result == ConversationHandler.END

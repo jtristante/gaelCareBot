@@ -458,8 +458,8 @@ class TestFIFOConsumption:
         assert row["user_id"] == 123
         assert row["username"] == "test"
         assert row["notas"] == "notas_test"
-        # SALIDA entry should NOT be marked as consumed (it participates in stock calculation)
-        assert row["consumed_at"] is None
+        # SALIDA entry should have consumed_at set (consistent with migration that sets it on all SALIDAs)
+        assert row["consumed_at"] is not None
 
     def test_consume_fifo_empty_stock_raises(self, db: MilkDatabase) -> None:
         """Consuming from empty stock raises ValueError."""
