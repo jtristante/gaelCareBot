@@ -45,11 +45,11 @@ class TestMilkDatabase:
         assert entry2["cantidad"] == 50
 
     def test_get_total_stock(self, db: MilkDatabase) -> None:
-        """Stock = SUM(ENTRADA WHERE consumed_at IS NULL) - SUM(SALIDA)."""
+        """Stock = SUM(ENTRADA WHERE consumed_at IS NULL)."""
         db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 123, "test_user")
         db.add_entry("SALIDA", 100, "2026-05-19T11:00:00", 123, "test_user")
-        # Stock = ENTRADA - SALIDA = 300 - 100 = 200
-        assert db.get_total_stock() == 200
+        # Stock = sum of unconsumed ENTRADAs = 300
+        assert db.get_total_stock() == 300
 
     def test_get_total_stock_only_entrada(self, db: MilkDatabase) -> None:
         """Stock equals sum of ENTRADA when no SALIDA exists."""
@@ -272,50 +272,49 @@ class TestSoftDelete:
         assert len(entries) == 1
         assert entries[0]["cantidad"] == 100
 
-    def test_get_total_stock_includes_soft_deleted(self, db: MilkDatabase) -> None:
-        """marked ENTRADAs still count toward stock (marking is for tracking, not deletion)."""
+    def test_get_total_stock_excludes_soft_deleted(self, db: MilkDatabase) -> None:
+        """Soft-deleted ENTRADAs are excluded from stock (consumed_at IS NOT NULL)."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
         assert db.get_total_stock() == 200
         db.delete_entry(entry_id)
-        # Marked ENTRADAs still count toward stock
-        assert db.get_total_stock() == 200
+        # Soft-deleted ENTRADA excluded → stock = 0
+        assert db.get_total_stock() == 0
 
     def test_get_total_stock_with_salidas(self, db: MilkDatabase) -> None:
-        """Stock = ENTRADA - SALIDA. Marked SALIDAs still subtract from stock."""
+        """Stock = SUM(ENTRADA WHERE consumed_at IS NULL); SALIDAs don't affect it."""
         db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 123, "test_user")
         salida_id = db.add_entry(
             "SALIDA", 100, "2026-05-19T11:00:00", 123, "test_user"
         )
-        # Stock = 300 - 100 = 200
-        assert db.get_total_stock() == 200
-        # Deleting SALIDA marks it but it still counts in the formula
+        # Stock = unconsumed ENTRADAs = 300 (SALIDAs not subtracted)
+        assert db.get_total_stock() == 300
+        # Deleting SALIDA doesn't change stock either
         db.delete_entry(salida_id)
-        # Stock = 300 - 100 = 200 (marked SALIDA still subtracts)
-        assert db.get_total_stock() == 200
+        assert db.get_total_stock() == 300
 
-    def test_get_entries_by_date_excludes_soft_deleted(self, db: MilkDatabase) -> None:
-        """date search excludes soft-deleted entry."""
+    def test_get_entries_by_date_includes_soft_deleted(self, db: MilkDatabase) -> None:
+        """date search includes ENTRADA entries even if later soft-deleted/consumed."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
         db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
         db.delete_entry(entry_id)
         entries = db.get_entries_by_date("2026-05-19")
-        assert len(entries) == 1
-        assert entries[0]["cantidad"] == 100
+        assert len(entries) == 2
+        assert {e["cantidad"] for e in entries} == {200, 100}
 
-    def test_get_daily_summary_excludes_soft_deleted(self, db: MilkDatabase) -> None:
-        """daily summary excludes soft-deleted."""
+    def test_get_daily_summary_includes_soft_deleted(self, db: MilkDatabase) -> None:
+        """daily summary includes ENTRADA entries even if later soft-deleted/consumed."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
         db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
         db.delete_entry(entry_id)
         summary = db.get_daily_summary("2026-05-19")
-        assert summary["total_entradas"] == 100
-        assert summary["balance"] == 100
+        assert summary["total_entradas"] == 300
+        assert summary["balance"] == 300
 
     def test_update_entry_on_soft_deleted_returns_false(self, db: MilkDatabase) -> None:
         """update_entry(id) returns False for deleted."""
@@ -405,11 +404,13 @@ class TestFIFOConsumption:
     """Test suite for FIFO consumption functionality."""
 
     def test_consume_fifo_basic(self, db: MilkDatabase) -> None:
-        """Consume 100 from 200 ENTRADA → stock = 100."""
+        """Consume 100 from 200 ENTRADA → stock = 0 (ENTRADA fully consumed, SALIDA matched)."""
         db.add_entry('ENTRADA', 200, '2026-05-22T10:00:00', 123)
         assert db.get_total_stock() == 200
         entry_id = db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test')
-        assert db.get_total_stock() == 100
+        # The full 200ml ENTRADA is marked consumed (consumed_at IS NOT NULL) and
+        # a 100ml SALIDA (consumed_at IS NOT NULL) is created. Both cancel out.
+        assert db.get_total_stock() == 0
         assert entry_id > 0
 
     def test_consume_fifo_insufficient_stock(self, db: MilkDatabase) -> None:
@@ -544,9 +545,9 @@ class TestStockFormula:
         assert db.get_total_stock() == 200
 
         db.consume_fifo(100, '2026-05-19T12:00:00', 123, 'test')
-        # ENTRADA marked consumed + SALIDA 100 created
-        # Stock = 200 (marked ENTRADA still counts) - 100 (SALIDA) = 100
-        assert db.get_total_stock() == 100
+        # ENTRADA marked consumed (excluded) + SALIDA 100 with consumed_at (excluded)
+        # Stock = 0 (matched ENTRADA and SALIDA cancel out)
+        assert db.get_total_stock() == 0
 
 
 class TestDualDateSummary:

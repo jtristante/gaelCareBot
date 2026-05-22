@@ -28,7 +28,7 @@ async def test_stock_empty(db, mock_update, mock_context, auth_init):
 
 
 async def test_stock_with_entries(db, mock_update, mock_context, auth_init):
-    """With 3 entries, display them in a 3-column table."""
+    """With 2 ENTRADA entries, display them in a 3-column table. SALIDA entries excluded."""
     db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", "Nota 1")
     db.add_entry("ENTRADA", 150, "2026-05-19T11:00:00", 123, "test_user", None)
     db.add_entry("SALIDA", 100, "2026-05-19T12:00:00", 456, "other_user", None)
@@ -43,9 +43,9 @@ async def test_stock_with_entries(db, mock_update, mock_context, auth_init):
     assert "<b>🗓️ Historial de stock</b>" in call_args
     assert "200ml" in call_args
     assert "150ml" in call_args
-    assert "100ml" in call_args
+    assert "100ml" not in call_args
     assert "test_user" in call_args
-    assert "other_user" in call_args
+    assert "other_user" not in call_args
     assert "📭 No hay entradas registradas." not in call_args
     assert len(call_args) <= 4096
 

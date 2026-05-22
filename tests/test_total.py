@@ -20,7 +20,7 @@ def auth_init(config):
 
 @pytest.mark.asyncio
 async def test_total_positive(db, mock_update, mock_context, auth_init):
-    """Adding 200+100 and consuming 50 should report total of 250."""
+    """Adding 200+100 and a SALIDA 50 should report total of 300 (sum of ENTRADAs)."""
     db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
     db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
     db.add_entry("SALIDA", 50, "2026-05-19T12:00:00", 123, "test_user")
@@ -29,7 +29,7 @@ async def test_total_positive(db, mock_update, mock_context, auth_init):
 
     await total_command(mock_update, mock_context)
 
-    expected = MSG_STOCK_TOTAL.format(cantidad=250)
+    expected = MSG_STOCK_TOTAL.format(cantidad=300)
     mock_update.message.reply_text.assert_awaited_once_with(expected)
 
 
@@ -45,7 +45,7 @@ async def test_total_zero(db, mock_update, mock_context, auth_init):
 
 @pytest.mark.asyncio
 async def test_total_after_full_consumption(db, mock_update, mock_context, auth_init):
-    """Adding 100 and consuming 100 should return the zero message."""
+    """SALIDA doesn't reduce total — ENTRADA still counts until consumed via consume_fifo."""
     db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
     db.add_entry("SALIDA", 100, "2026-05-19T12:00:00", 123, "test_user")
 
@@ -53,4 +53,5 @@ async def test_total_after_full_consumption(db, mock_update, mock_context, auth_
 
     await total_command(mock_update, mock_context)
 
-    mock_update.message.reply_text.assert_awaited_once_with(MSG_STOCK_TOTAL_ZERO)
+    expected = MSG_STOCK_TOTAL.format(cantidad=100)
+    mock_update.message.reply_text.assert_awaited_once_with(expected)

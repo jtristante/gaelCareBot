@@ -302,12 +302,16 @@ class MilkDatabase:
         return cur.rowcount
 
     def get_total_stock(self) -> int:
-        """Return current stock: SUM(all ENTRADAs) - SUM(all SALIDAs). 0 if empty."""
+        """Return total unconsumed ENTRADAs (matches entries shown in /stock).
+
+        ``consume_fifo()`` marks consumed ENTRADAs with ``consumed_at`` so
+        they are excluded.  Only ENTRADA entries with ``consumed_at IS NULL``
+        are counted — this matches the entries displayed by /stock.
+        """
         cur = self.conn.execute(
-            """SELECT
-                   COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) -
-                   COALESCE(SUM(CASE WHEN tipo = 'SALIDA' THEN cantidad ELSE 0 END), 0)
-               FROM transactions"""
+            """SELECT COALESCE(SUM(cantidad), 0)
+               FROM transactions
+               WHERE tipo = 'ENTRADA' AND consumed_at IS NULL"""
         )
         row = cur.fetchone()
         return max(row[0], 0) if row else 0

@@ -17,14 +17,18 @@ logger = logging.getLogger(__name__)
 
 @authorized_only
 async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle the /stock command — show complete stock history.
+    """Handle the /stock command — show all ENTRADA entries (extractions).
 
-    Retrieves all entries from the database (ordered newest-first) and
-    formats them as a monospace table.  If there are no entries the
-    handler replies with ERROR_NO_ENTRIES.
+    Retrieves ENTRADA entries from the database (ordered newest-first) and
+    formats them as a monospace table.  SALIDA entries (consumptions) are
+    excluded.  If there are no entries the handler replies with
+    ERROR_NO_ENTRIES.
     """
     db = context.bot_data["db"]
-    entries = db.get_all_entries(order_by="add_at DESC")
+    entries = [
+        e for e in db.get_all_entries(order_by="add_at DESC", include_consumed=False)
+        if e["tipo"] == "ENTRADA"
+    ]
 
     if not entries:
         logger.info("Stock list requested but no entries found")
