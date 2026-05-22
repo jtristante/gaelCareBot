@@ -53,7 +53,7 @@ async def agregar_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     notas = " ".join(context.args[1:]) if len(context.args) > 1 else None
     
     now_madrid = datetime.now(MADRID_TZ)
-    fecha_hora_iso = now_madrid.isoformat()
+    add_at_iso = now_madrid.isoformat()
     fecha_formateada = now_madrid.strftime("%d/%m/%Y")
     
     user = update.effective_user
@@ -70,7 +70,7 @@ async def agregar_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         entry_id = db.add_entry(
             tipo="ENTRADA",
             cantidad=cantidad,
-            fecha_hora=fecha_hora_iso,
+            add_at=add_at_iso,
             user_id=user_id,
             username=username,
             notas=notas,

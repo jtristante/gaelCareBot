@@ -21,7 +21,7 @@ def sample_entry() -> dict[str, Any]:
     return {
         "tipo": "ENTRADA",
         "cantidad": 200,
-        "fecha_hora": "2026-05-19T10:00:00",
+        "add_at": "2026-05-19T10:00:00",
         "user_id": 123,
         "username": "test_user",
         "notas": None,

@@ -140,7 +140,7 @@ class TestEditarStart:
 
         result = await editar_start(update, ctx)
 
-        mock_db.get_all_entries.assert_called_once_with(order_by="fecha_hora DESC", include_consumed=True)
+        mock_db.get_all_entries.assert_called_once_with(order_by="add_at DESC", include_consumed=True)
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == -1  # ConversationHandler.END
 
@@ -148,8 +148,8 @@ class TestEditarStart:
     async def test_editar_start_with_entries(self, setup_update, setup_context, mock_db):
         """Test /editar with entries - should show entry selection keyboard."""
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "fecha_hora": "2026-05-19T10:00:00", "cantidad": 200},
-            {"id": 2, "tipo": "SALIDA", "fecha_hora": "2026-05-18T12:00:00", "cantidad": 100},
+            {"id": 1, "tipo": "ENTRADA", "add_at": "2026-05-19T10:00:00", "cantidad": 200},
+            {"id": 2, "tipo": "SALIDA", "add_at": "2026-05-18T12:00:00", "cantidad": 100},
         ]
 
         update = setup_update(123)
@@ -157,7 +157,7 @@ class TestEditarStart:
 
         result = await editar_start(update, ctx)
 
-        mock_db.get_all_entries.assert_called_once_with(order_by="fecha_hora DESC", include_consumed=True)
+        mock_db.get_all_entries.assert_called_once_with(order_by="add_at DESC", include_consumed=True)
         update.message.reply_text.assert_called_once()
         call_args = update.message.reply_text.call_args
         assert call_args[0][0] == MSG_SELECT_ENTRY
@@ -208,7 +208,7 @@ class TestEditarSelectEntry:
         mock_db.get_entry.return_value = {
             "id": 1,
             "tipo": "ENTRADA",
-            "fecha_hora": "2026-05-19T10:00:00",
+            "add_at": "2026-05-19T10:00:00",
             "cantidad": 200,
             "notas": None,
         }
@@ -575,7 +575,7 @@ class TestEditarModifyTipo:
         update = setup_callback_update("tipo_SALIDA")
         ctx = setup_context({
             "edit_entry_id": 1,
-            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
+            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
             "edit_field": "tipo"
         })
 
@@ -607,7 +607,7 @@ class TestEditarModifyTipo:
         update = setup_callback_update("tipo_ENTRADA")
         ctx = setup_context({
             "edit_entry_id": 1,
-            "edit_entry_original": {"tipo": "SALIDA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
+            "edit_entry_original": {"tipo": "SALIDA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
             "edit_field": "tipo"
         })
 
@@ -639,7 +639,7 @@ class TestEditarModifyTipo:
         update = setup_callback_update("tipo_ENTRADA")
         ctx = setup_context({
             "edit_entry_id": 1,
-            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
+            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
             "edit_field": "tipo"
         })
 

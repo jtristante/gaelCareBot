@@ -60,7 +60,7 @@ async def editar_start(update: Update, context: Any) -> int:
         return ConversationHandler.END
 
     # Get last 20 entries (including consumed)
-    entries = db.get_all_entries(order_by="fecha_hora DESC", include_consumed=True)[:20]
+    entries = db.get_all_entries(order_by="add_at DESC", include_consumed=True)[:20]
 
     if not entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
@@ -70,7 +70,7 @@ async def editar_start(update: Update, context: Any) -> int:
     keyboard = []
     for entry in entries:
         # Format: ID - Tipo - Fecha - Cantidad
-        fecha = entry["fecha_hora"][:10] if entry["fecha_hora"] else "N/A"
+        fecha = entry["add_at"][:10] if entry["add_at"] else "N/A"
         tipo_label = "ENT" if entry["tipo"] == "ENTRADA" else "SAL"
         label = f"#{entry['id']} [{tipo_label}] {fecha} - {entry['cantidad']}ml"
         keyboard.append([InlineKeyboardButton(label, callback_data=f"edit_{entry['id']}")])
@@ -204,7 +204,7 @@ async def tipo_selected(update: Update, context: Any) -> int:
     # Get original entry for display
     entry_id = context.user_data.get("edit_entry_id")
     original_entry = context.user_data.get("edit_entry_original", {})
-    fecha = original_entry.get("fecha_hora", "N/A")[:10] if original_entry.get("fecha_hora") else "N/A"
+    fecha = original_entry.get("add_at", "N/A")[:10] if original_entry.get("add_at") else "N/A"
 
     # Build confirmation message
     entry_info = (
@@ -260,7 +260,7 @@ async def receive_value(update: Update, context: Any) -> int:
 
     # Get original entry for display
     original_entry = context.user_data.get("edit_entry_original", {})
-    fecha = original_entry.get("fecha_hora", "N/A")[:10] if original_entry.get("fecha_hora") else "N/A"
+    fecha = original_entry.get("add_at", "N/A")[:10] if original_entry.get("add_at") else "N/A"
 
     # Build confirmation message
     entry_info = (
@@ -353,13 +353,13 @@ async def confirm_edit(update: Update, context: Any) -> int:
         # For fecha field, we need to preserve the time component
         if field_name == "fecha":
             original_entry = context.user_data.get("edit_entry_original", {})
-            original_fecha_hora = original_entry.get("fecha_hora", "")
-            if original_fecha_hora and "T" in original_fecha_hora:
-                original_time = original_fecha_hora.split("T")[1]
+            original_add_at = original_entry.get("add_at", "")
+            if original_add_at and "T" in original_add_at:
+                original_time = original_add_at.split("T")[1]
                 new_value = f"{new_value}T{original_time}"
             else:
                 new_value = f"{new_value}T12:00:00"
-            update_kwargs = {"fecha_hora": new_value}
+            update_kwargs = {"add_at": new_value}
 
         # Update the entry
         success = db.update_entry(entry_id, **update_kwargs)

@@ -24,7 +24,7 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     handler replies with ERROR_NO_ENTRIES.
     """
     db = context.bot_data["db"]
-    entries = db.get_all_entries(order_by="fecha_hora DESC")
+    entries = db.get_all_entries(order_by="add_at DESC")
 
     if not entries:
         logger.info("Stock list requested but no entries found")
@@ -36,7 +36,7 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     rows = []
     for entry in entries:
-        dt = datetime.fromisoformat(entry["fecha_hora"])
+        dt = datetime.fromisoformat(entry["add_at"])
         fecha_str = dt.strftime("%d/%m %H:%M")
 
         cantidad_str = f"{entry['cantidad']}ml"
