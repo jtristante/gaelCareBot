@@ -46,16 +46,16 @@ def main() -> None:
     db.reset_database(confirm=True)
 
     for date_str, cantidad in SEED_DATA:
-        fecha_hora = parse_date(date_str)
+        add_at = parse_date(date_str)
         db.add_entry(
             tipo="ENTRADA",
             cantidad=cantidad,
-            fecha_hora=fecha_hora,
+            add_at=add_at,
             user_id=0,
             username="seed",
         )
 
-    records = db.get_all_entries(order_by="fecha_hora ASC")
+    records = db.get_all_entries(order_by="add_at ASC")
     total_stock = db.get_total_stock()
     print(f"Inserted {len(records)} ENTRADA records. Total stock: {total_stock} ml.")
 
