@@ -121,7 +121,7 @@ class TestConsumirCommandArgsMode:
         mock_db.consume_fifo.assert_called_once()
         call_args = mock_db.consume_fifo.call_args
         assert call_args.kwargs["cantidad"] == 100
-        assert call_args.kwargs["fecha_hora"] == "2026-05-19T12:00:00"
+        assert call_args.kwargs["add_at"] == "2026-05-19T12:00:00"
         assert call_args.kwargs["user_id"] == 123
         assert call_args.kwargs["username"] == "test_user"
         assert call_args.kwargs["notas"] is None
@@ -275,7 +275,7 @@ class TestConsumirCommandArgsMode:
 
         # Mock get_all_entries to return an ENTRADA entry
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00"}
+            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00"}
         ]
 
         result = await consumir_command(update, ctx)
@@ -297,7 +297,7 @@ class TestConsumirCommandArgsMode:
 
         # Mock get_all_entries to return an ENTRADA entry
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00"}
+            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00"}
         ]
 
         result = await consumir_command(update, ctx)
@@ -399,7 +399,7 @@ class TestConsumirCommandArgsMode:
 
         db.consume_fifo(
             cantidad=50,
-            fecha_hora="2026-05-19T12:00:00",
+            add_at="2026-05-19T12:00:00",
             user_id=123,
         )
 
@@ -489,9 +489,9 @@ class TestReversalMode:
         update = setup_update(123)
         ctx = setup_context([])
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
-            {"id": 2, "tipo": "SALIDA", "cantidad": 50, "fecha_hora": "2026-05-19T11:00:00", "notas": None},
-            {"id": 3, "tipo": "ENTRADA", "cantidad": 200, "fecha_hora": "2026-05-19T12:00:00", "notas": None},
+            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
+            {"id": 2, "tipo": "SALIDA", "cantidad": 50, "add_at": "2026-05-19T11:00:00", "notas": None},
+            {"id": 3, "tipo": "ENTRADA", "cantidad": 200, "add_at": "2026-05-19T12:00:00", "notas": None},
         ]
 
         result = await consumir_command(update, ctx)
@@ -526,7 +526,7 @@ class TestReversalMode:
             "id": 1,
             "tipo": "ENTRADA",
             "cantidad": 100,
-            "fecha_hora": "2026-05-19T10:00:00",
+            "add_at": "2026-05-19T10:00:00",
             "notas": "Test notes"
         }
 
@@ -569,7 +569,7 @@ class TestReversalMode:
             "id": 1,
             "tipo": "ENTRADA",
             "cantidad": 100,
-            "fecha_hora": "2026-05-19T10:00:00",
+            "add_at": "2026-05-19T10:00:00",
             "notas": "Test notes",
             "username": "test_user"
         }
@@ -643,7 +643,7 @@ class TestReversalMode:
             "id": 1,
             "tipo": "SALIDA",  # Not ENTRADA
             "cantidad": 100,
-            "fecha_hora": "2026-05-19T10:00:00",
+            "add_at": "2026-05-19T10:00:00",
             "notas": None
         }
 
@@ -684,7 +684,7 @@ class TestReversalMode:
             "id": 1,
             "tipo": "ENTRADA",
             "cantidad": 100,
-            "fecha_hora": "2026-05-19T10:00:00",
+            "add_at": "2026-05-19T10:00:00",
             "notas": "Test notes",
             "username": "test_user"
         }
@@ -715,7 +715,7 @@ class TestReversalMode:
             "id": 1,
             "tipo": "ENTRADA",
             "cantidad": 100,
-            "fecha_hora": "2026-05-19T10:00:00",
+            "add_at": "2026-05-19T10:00:00",
             "notas": "Test notes",
             "username": "test_user"
         }
@@ -772,4 +772,98 @@ class TestReversalMode:
         assert "reverse_entry_id" not in ctx.user_data
 
         # Verify returned ConversationHandler.END
+        assert result == ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_confirm_reversal_shows_correct_data(self, db, monkeypatch):
+        """Test that confirm_reversal displays correct cantidad and date (not 0/N/A).
+
+        This MUST FAIL (RED) because confirm_reversal() calls db.get_entry()
+        AFTER setting consumed_at, and get_entry() filters by consumed_at IS NULL,
+        so it returns None -> cantidad=0, fecha="N/A".
+
+        The fix must move get_entry() BEFORE the mutation.
+        """
+        # Disable send_daily_summary to avoid import issues
+        monkeypatch.setattr("src.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
+
+        # Add an ENTRADA entry to the real in-memory database
+        entry_id = db.add_entry(
+            "ENTRADA", 150, "2026-05-19T10:00:00", 123, "test_user", None,
+        )
+
+        # Create mock update with callback_query
+        update = Mock()
+        update.callback_query = Mock()
+        update.callback_query.data = "confirm"
+        update.callback_query.answer = AsyncMock()
+        update.callback_query.edit_message_text = AsyncMock()
+
+        # Create mock context with real db
+        context = Mock()
+        context.bot = Mock()
+        context.bot.send_message = AsyncMock()
+        context.bot_data = {"db": db}
+        context.user_data = {"reverse_entry_id": entry_id}
+
+        result = await confirm_reversal(update, context)
+
+        # Verify the mutation still happened (sanity check — the bug is in display, not mutation)
+        row = db.conn.execute("SELECT * FROM transactions WHERE id = ?", (entry_id,)).fetchone()
+        assert row["tipo"] == "SALIDA"
+        assert row["consumed_at"] is not None
+
+        # Verify the displayed message — now shows correct data after fix
+        call_args = update.callback_query.edit_message_text.call_args
+        msg_text = call_args[0][0]
+
+        expected = MSG_CONSUMED.format(cantidad=150, fecha="19/05/2026")
+        assert msg_text == expected, f"Expected '{expected}', got: {msg_text}"
+
+        assert result == ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_reversal_confirm_reversal_updates_entry_and_consumed_at(self, db, monkeypatch):
+        """Test that confirm_reversal correctly updates tipo to SALIDA and sets consumed_at.
+
+        This test verifies the mutation part works (update_entry + consumed_at).
+        It queries the database directly via SQL.
+        """
+        # Disable send_daily_summary to avoid import issues
+        monkeypatch.setattr("src.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
+
+        # Add an ENTRADA entry to the real in-memory database
+        entry_id = db.add_entry(
+            "ENTRADA", 150, "2026-05-19T10:00:00", 123, "test_user", None,
+        )
+
+        # Create mock update with callback_query
+        update = Mock()
+        update.callback_query = Mock()
+        update.callback_query.data = "confirm"
+        update.callback_query.answer = AsyncMock()
+        update.callback_query.edit_message_text = AsyncMock()
+
+        # Create mock context with real db
+        context = Mock()
+        context.bot = Mock()
+        context.bot.send_message = AsyncMock()
+        context.bot_data = {"db": db}
+        context.user_data = {"reverse_entry_id": entry_id}
+
+        result = await confirm_reversal(update, context)
+
+        # Query directly via SQL to verify the mutation
+        row = db.conn.execute("SELECT * FROM transactions WHERE id = ?", (entry_id,)).fetchone()
+
+        # Verify tipo was changed to SALIDA
+        assert row["tipo"] == "SALIDA", (
+            f"Expected tipo='SALIDA', got '{row['tipo']}'"
+        )
+
+        # Verify consumed_at was set (not NULL)
+        assert row["consumed_at"] is not None, (
+            "consumed_at is NULL — confirm_reversal did not set consumed_at"
+        )
+
         assert result == ConversationHandler.END

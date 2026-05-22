@@ -160,7 +160,7 @@ async def _handle_fifo_consumption(update: Update, context: ContextTypes.DEFAULT
         # Use consume_fifo to mark ENTRADAs and create SALIDA
         entry_id = db.consume_fifo(
             cantidad=cantidad,
-            fecha_hora=fecha_iso,
+            add_at=fecha_iso,
             user_id=user_id,
             username=username,
             notas=notas,
@@ -209,7 +209,7 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
     # Get all entries, then filter for ENTRADA only (not consumed)
-    all_entries = db.get_all_entries(order_by="fecha_hora DESC", include_consumed=False)
+    all_entries = db.get_all_entries(order_by="add_at DESC", include_consumed=False)
     entrada_entries = [e for e in all_entries if e["tipo"] == "ENTRADA"][:20]
 
     if not entrada_entries:
@@ -220,7 +220,7 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
     keyboard = []
     for entry in entrada_entries:
         # Format: ID - Fecha - Cantidad
-        fecha = entry["fecha_hora"][:10] if entry["fecha_hora"] else "N/A"
+        fecha = entry["add_at"][:10] if entry["add_at"] else "N/A"
         label = f"#{entry['id']} [ENTRADA] {fecha} - {entry['cantidad']}ml"
         keyboard.append([InlineKeyboardButton(label, callback_data=f"reverse_{entry['id']}")])
 
@@ -271,7 +271,7 @@ async def entry_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     context.user_data["reverse_entry_id"] = entry_id
 
     # Build entry info for confirmation message
-    fecha = entry["fecha_hora"][:10] if entry["fecha_hora"] else "N/A"
+    fecha = entry["add_at"][:10] if entry["add_at"] else "N/A"
     entry_info = (
         f"ID: #{entry_id}\n"
         f"Tipo: {entry['tipo']}\n"
@@ -319,6 +319,15 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         _clear_reversal_data(context)
         return ConversationHandler.END
 
+    # Capture entry data BEFORE mutation (get_entry filters by consumed_at IS NULL)
+    entry = db.get_entry(entry_id)
+    if not entry:
+        await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
+        _clear_reversal_data(context)
+        return ConversationHandler.END
+    cantidad = entry["cantidad"]
+    add_at_raw = entry.get("add_at", "")
+
     try:
         # Change tipo to SALIDA
         success = db.update_entry(entry_id, tipo="SALIDA")
@@ -331,13 +340,11 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             )
             db.conn.commit()
 
-            entry = db.get_entry(entry_id)
-            if entry and entry.get("fecha_hora"):
-                fecha_parts = entry["fecha_hora"][:10].split("-")
+            if add_at_raw:
+                fecha_parts = add_at_raw[:10].split("-")
                 formatted_date = f"{fecha_parts[2]}/{fecha_parts[1]}/{fecha_parts[0]}"
             else:
                 formatted_date = "N/A"
-            cantidad = entry["cantidad"] if entry else 0
 
             # Try to send daily summary notification (gracefully handle if not available)
             if _SEND_DAILY_SUMMARY_AVAILABLE and send_daily_summary is not None:
@@ -388,5 +395,5 @@ consumir_conv_handler = ConversationHandler(
         CONFIRMING: [CallbackQueryHandler(confirm_reversal, pattern="^(confirm|cancel)")],
     },
     fallbacks=[CommandHandler("cancel", cancel)],
-    per_message=False,
+    per_message=True,
 )
