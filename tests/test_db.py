@@ -45,9 +45,10 @@ class TestMilkDatabase:
         assert entry2["cantidad"] == 50
 
     def test_get_total_stock(self, db: MilkDatabase) -> None:
-        """Stock = SUM(ENTRADA) - SUM(SALIDA)."""
+        """Stock = SUM(ENTRADA WHERE consumed_at IS NULL) - SUM(SALIDA)."""
         db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 123, "test_user")
         db.add_entry("SALIDA", 100, "2026-05-19T11:00:00", 123, "test_user")
+        # Stock = ENTRADA - SALIDA = 300 - 100 = 200
         assert db.get_total_stock() == 200
 
     def test_get_total_stock_only_entrada(self, db: MilkDatabase) -> None:
@@ -56,14 +57,13 @@ class TestMilkDatabase:
         db.add_entry("ENTRADA", 50, "2026-05-19T11:00:00", 123, "test_user")
         assert db.get_total_stock() == 200
 
-    def test_get_total_stock_negative_returns_zero(
+    def test_get_total_stock_no_entradas_returns_zero(
         self, db: MilkDatabase
     ) -> None:
-        """Stock does not go below 0 (consumption > supply)."""
+        """Stock is 0 when SALIDAs exceed ENTRADAs (never negative)."""
         db.add_entry("SALIDA", 50, "2026-05-19T10:00:00", 123, "test_user")
-        # The SQL returns a negative number; the caller is responsible for
-        # treating negative as zero if desired.  We verify the raw value.
-        assert db.get_total_stock() == -50
+        # Stock = 0 - 50 = -50, but max(0, -50) = 0
+        assert db.get_total_stock() == 0
 
     def test_get_daily_summary(self, db: MilkDatabase) -> None:
         """Daily summary returns correct aggregates."""
@@ -272,24 +272,28 @@ class TestSoftDelete:
         assert len(entries) == 1
         assert entries[0]["cantidad"] == 100
 
-    def test_get_total_stock_excludes_soft_deleted(self, db: MilkDatabase) -> None:
-        """stock decreases when deleting ENTRADA."""
+    def test_get_total_stock_includes_soft_deleted(self, db: MilkDatabase) -> None:
+        """marked ENTRADAs still count toward stock (marking is for tracking, not deletion)."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
         assert db.get_total_stock() == 200
         db.delete_entry(entry_id)
-        assert db.get_total_stock() == 0
+        # Marked ENTRADAs still count toward stock
+        assert db.get_total_stock() == 200
 
-    def test_get_total_stock_excludes_soft_deleted_salida(self, db: MilkDatabase) -> None:
-        """stock increases when deleting SALIDA."""
+    def test_get_total_stock_with_salidas(self, db: MilkDatabase) -> None:
+        """Stock = ENTRADA - SALIDA. Marked SALIDAs still subtract from stock."""
         db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 123, "test_user")
         salida_id = db.add_entry(
             "SALIDA", 100, "2026-05-19T11:00:00", 123, "test_user"
         )
+        # Stock = 300 - 100 = 200
         assert db.get_total_stock() == 200
+        # Deleting SALIDA marks it but it still counts in the formula
         db.delete_entry(salida_id)
-        assert db.get_total_stock() == 300
+        # Stock = 300 - 100 = 200 (marked SALIDA still subtracts)
+        assert db.get_total_stock() == 200
 
     def test_get_entries_by_date_excludes_soft_deleted(self, db: MilkDatabase) -> None:
         """date search excludes soft-deleted entry."""
@@ -336,15 +340,15 @@ class TestSoftDelete:
         assert len(entries) == 1
         assert entries[0]["cantidad"] == 200
 
-    def test_soft_deleted_entry_has_deleted_at_set(self, db: MilkDatabase) -> None:
-        """the deleted_at field is not NULL after delete."""
+    def test_soft_deleted_entry_has_consumed_at_set(self, db: MilkDatabase) -> None:
+        """the consumed_at field is not NULL after delete."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
         db.delete_entry(entry_id)
-        # Access the database directly to check deleted_at
+        # Access the database directly to check consumed_at
         cur = db.conn.execute(
-            "SELECT deleted_at FROM transactions WHERE id = ?", (entry_id,)
+            "SELECT consumed_at FROM transactions WHERE id = ?", (entry_id,)
         )
         row = cur.fetchone()
         assert row[0] is not None
@@ -376,12 +380,12 @@ class TestResetDatabase:
         assert new_id == 1
 
     def test_reset_preserves_schema(self, db: MilkDatabase) -> None:
-        """after reset, the deleted_at column still exists."""
+        """after reset, the consumed_at column still exists."""
         db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
         db.reset_database(confirm=True)
         cur = db.conn.execute("PRAGMA table_info(transactions)")
         columns = {row[1] for row in cur.fetchall()}
-        assert "deleted_at" in columns
+        assert "consumed_at" in columns
 
     def test_reset_idempotent(self, db: MilkDatabase) -> None:
         """calling reset_database twice does not raise."""
@@ -395,3 +399,152 @@ class TestResetDatabase:
         """reset_database() without confirm raises ValueError."""
         with pytest.raises(ValueError, match="Must pass confirm=True to reset database"):
             db.reset_database()
+
+
+class TestFIFOConsumption:
+    """Test suite for FIFO consumption functionality."""
+
+    def test_consume_fifo_basic(self, db: MilkDatabase) -> None:
+        """Consume 100 from 200 ENTRADA → stock = 100."""
+        db.add_entry('ENTRADA', 200, '2026-05-22T10:00:00', 123)
+        assert db.get_total_stock() == 200
+        entry_id = db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test')
+        assert db.get_total_stock() == 100
+        assert entry_id > 0
+
+    def test_consume_fifo_insufficient_stock(self, db: MilkDatabase) -> None:
+        """Consuming more than available raises ValueError."""
+        db.add_entry('ENTRADA', 50, '2026-05-22T10:00:00', 123)
+        with pytest.raises(ValueError, match="Insufficient stock"):
+            db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test')
+
+    def test_consume_fifo_exact_match(self, db: MilkDatabase) -> None:
+        """Consume exactly what's available → stock = 0."""
+        db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
+        entry_id = db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test')
+        assert db.get_total_stock() == 0
+
+    def test_consume_fifo_fifo_order(self, db: MilkDatabase) -> None:
+        """FIFO: oldest ENTRADAs are consumed first."""
+        id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)  # oldest
+        id2 = db.add_entry('ENTRADA', 200, '2026-05-22T11:00:00', 123)  # middle
+        id3 = db.add_entry('ENTRADA', 150, '2026-05-22T12:00:00', 123)  # newest
+
+        db.consume_fifo(250, '2026-05-22T13:00:00', 123, 'test')
+
+        # Check consumed_at is set for id1 and id2, not id3
+        cur = db.conn.execute("SELECT id, consumed_at FROM transactions WHERE tipo='ENTRADA'")
+        rows = {row[0]: row[1] for row in cur.fetchall()}
+        assert rows[id1] is not None, "id1 should be consumed"
+        assert rows[id2] is not None, "id2 should be consumed"
+        assert rows[id3] is None, "id3 should NOT be consumed (over-marking is OK)"
+
+        # Stock = all ENTRADAs - SALIDA = (100+200+150) - 250 = 200
+        # Even though id1 and id2 are marked consumed, they still count toward stock
+        assert db.get_total_stock() == 200
+
+    def test_consume_fifo_creates_salida_entry(self, db: MilkDatabase) -> None:
+        """consume_fifo creates a SALIDA entry with exact amount (not marked as consumed)."""
+        db.add_entry('ENTRADA', 200, '2026-05-22T10:00:00', 123)
+        entry_id = db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test', 'notas_test')
+
+        # Verify the SALIDA entry was created
+        cur = db.conn.execute("SELECT * FROM transactions WHERE id = ?", (entry_id,))
+        row = cur.fetchone()
+        assert row is not None
+        assert row["tipo"] == "SALIDA"
+        assert row["cantidad"] == 100
+        assert row["fecha_hora"] == "2026-05-22T12:00:00"
+        assert row["user_id"] == 123
+        assert row["username"] == "test"
+        assert row["notas"] == "notas_test"
+        # SALIDA entry should NOT be marked as consumed (it participates in stock calculation)
+        assert row["consumed_at"] is None
+
+    def test_consume_fifo_empty_stock_raises(self, db: MilkDatabase) -> None:
+        """Consuming from empty stock raises ValueError."""
+        with pytest.raises(ValueError, match="Insufficient stock"):
+            db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test')
+
+    def test_consume_fifo_only_counts_unconsumed_entradas(self, db: MilkDatabase) -> None:
+        """Once an ENTRADA is marked consumed by FIFO, it cannot be consumed again."""
+        id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
+        db.consume_fifo(50, '2026-05-22T11:00:00', 123, 'test')  # marks id1 consumed (over-marked)
+
+        # id1 is now marked consumed, so no unconsumed ENTRADAs available for FIFO
+        # Even though stock shows 50 remaining (100 ENTRADA - 50 SALIDA),
+        # the ENTRADA is marked and can't be consumed again via FIFO
+        with pytest.raises(ValueError, match="Insufficient stock"):
+            db.consume_fifo(1, '2026-05-22T12:00:00', 123, 'test')
+
+    def test_consume_fifo_with_tie_breaker_id(self, db: MilkDatabase) -> None:
+        """When fecha_hora is equal, use id ASC as tie-breaker."""
+        id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
+        id2 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)  # same timestamp
+        
+        db.consume_fifo(100, '2026-05-22T11:00:00', 123, 'test')
+        
+        # id1 should be consumed (lower id), id2 should remain
+        cur = db.conn.execute("SELECT id, consumed_at FROM transactions WHERE tipo='ENTRADA'")
+        rows = {row[0]: row[1] for row in cur.fetchall()}
+        assert rows[id1] is not None
+        assert rows[id2] is None
+
+
+class TestGetAllEntriesIncludeConsumed:
+    """Test suite for get_all_entries include_consumed parameter."""
+
+    def test_get_all_entries_default_excludes_consumed(self, db: MilkDatabase) -> None:
+        """Default behavior excludes consumed entries."""
+        id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
+        id2 = db.add_entry('ENTRADA', 200, '2026-05-22T11:00:00', 123)
+        db.delete_entry(id1)
+        
+        entries = db.get_all_entries()
+        assert len(entries) == 1
+        assert entries[0]["id"] == id2
+
+    def test_get_all_entries_include_consumed_true(self, db: MilkDatabase) -> None:
+        """include_consumed=True shows all entries including consumed."""
+        id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
+        id2 = db.add_entry('ENTRADA', 200, '2026-05-22T11:00:00', 123)
+        db.delete_entry(id1)
+        
+        entries = db.get_all_entries(include_consumed=True)
+        assert len(entries) == 2
+        ids = {e["id"] for e in entries}
+        assert ids == {id1, id2}
+
+    def test_get_all_entries_include_consumed_false(self, db: MilkDatabase) -> None:
+        """include_consumed=False is same as default (excludes consumed)."""
+        id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
+        db.add_entry('ENTRADA', 200, '2026-05-22T11:00:00', 123)
+        db.delete_entry(id1)
+        
+        entries = db.get_all_entries(include_consumed=False)
+        assert len(entries) == 1
+
+
+class TestStockFormula:
+    """Test suite for the stock formula: SUM(all ENTRADAs) - SUM(all SALIDAs)."""
+
+    def test_get_total_stock_formula(self, db: MilkDatabase) -> None:
+        """Stock = SUM(all ENTRADAs) - SUM(all SALIDAs), never negative."""
+        db.add_entry('ENTRADA', 300, '2026-05-19T10:00:00', 123)
+        db.add_entry('SALIDA', 100, '2026-05-19T11:00:00', 123)
+        assert db.get_total_stock() == 200
+
+    def test_get_total_stock_never_negative(self, db: MilkDatabase) -> None:
+        """Stock never goes below 0."""
+        db.add_entry('SALIDA', 50, '2026-05-19T10:00:00', 123)
+        assert db.get_total_stock() == 0
+
+    def test_get_total_stock_after_consumption(self, db: MilkDatabase) -> None:
+        """Stock decreases when ENTRADAs are consumed via FIFO."""
+        db.add_entry('ENTRADA', 200, '2026-05-19T10:00:00', 123)
+        assert db.get_total_stock() == 200
+
+        db.consume_fifo(100, '2026-05-19T12:00:00', 123, 'test')
+        # ENTRADA marked consumed + SALIDA 100 created
+        # Stock = 200 (marked ENTRADA still counts) - 100 (SALIDA) = 100
+        assert db.get_total_stock() == 100

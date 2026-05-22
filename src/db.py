@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     username TEXT,
     notas TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    deleted_at TEXT DEFAULT NULL
+    consumed_at TEXT DEFAULT NULL
 )
 """
 
@@ -70,14 +70,25 @@ class MilkDatabase:
         self.conn.commit()
 
     def _migrate_schema(self) -> None:
-        """Add the deleted_at column if it does not already exist (idempotent)."""
+        """Migrate schema: rename deleted_at→consumed_at, add consumed_at if missing, migrate SALIDAs."""
         try:
             self.conn.execute(
-                "ALTER TABLE transactions ADD COLUMN deleted_at TEXT DEFAULT NULL"
+                "ALTER TABLE transactions RENAME COLUMN deleted_at TO consumed_at"
             )
             self.conn.commit()
         except sqlite3.OperationalError:
-            pass  # Column already exists — migration is idempotent
+            pass
+        try:
+            self.conn.execute(
+                "ALTER TABLE transactions ADD COLUMN consumed_at TEXT DEFAULT NULL"
+            )
+            self.conn.commit()
+        except sqlite3.OperationalError:
+            pass
+        self.conn.execute(
+            "UPDATE transactions SET consumed_at = COALESCE(consumed_at, created_at) WHERE tipo = 'SALIDA'"
+        )
+        self.conn.commit()
 
     @staticmethod
     def _validate_tipo(tipo: str) -> None:
@@ -115,22 +126,24 @@ class MilkDatabase:
     def get_entry(self, entry_id: int) -> Optional[dict[str, Any]]:
         """Return a single entry by id, or None if not found or soft-deleted."""
         cur = self.conn.execute(
-            "SELECT * FROM transactions WHERE id = ? AND deleted_at IS NULL", (entry_id,)
+            "SELECT * FROM transactions WHERE id = ? AND consumed_at IS NULL", (entry_id,)
         )
         row = cur.fetchone()
         return dict_from_row(row)
 
     def get_all_entries(
-        self, order_by: str = "fecha_hora DESC"
+        self, order_by: str = "fecha_hora DESC", include_consumed: bool = False
     ) -> list[dict[str, Any]]:
-        """Return all entries ordered by *order_by* (sanitised)."""
-        # order_by is split on whitespace and only the first two tokens are used
-        # to prevent injection. Acceptable: "fecha_hora DESC" or "fecha_hora ASC".
+        """Return all entries ordered by *order_by* (sanitised).
+
+        Args:
+            order_by: Column and direction to sort by
+            include_consumed: If True, include consumed entries. Default False.
+        """
         parts = order_by.strip().split()
         if len(parts) not in (1, 2):
             raise ValueError(f"Invalid order_by: {order_by!r}")
         col = parts[0]
-        # Whitelist allowed column names
         allowed_cols = {"id", "tipo", "cantidad", "fecha_hora", "created_at"}
         if col not in allowed_cols:
             raise ValueError(f"Invalid sort column: {col!r}")
@@ -139,9 +152,14 @@ class MilkDatabase:
             raise ValueError(f"Invalid sort direction: {direction!r}")
 
         safe_order = f"{col} {direction}"
-        cur = self.conn.execute(
-            f"SELECT * FROM transactions WHERE deleted_at IS NULL ORDER BY {safe_order}"
-        )
+        if include_consumed:
+            cur = self.conn.execute(
+                f"SELECT * FROM transactions ORDER BY {safe_order}"
+            )
+        else:
+            cur = self.conn.execute(
+                f"SELECT * FROM transactions WHERE consumed_at IS NULL ORDER BY {safe_order}"
+            )
         return [dict_from_row(row) for row in cur.fetchall()]
 
     def get_entries_by_date(self, date: str) -> list[dict[str, Any]]:
@@ -156,7 +174,7 @@ class MilkDatabase:
         end = next_dt.strftime("%Y-%m-%dT00:00:00")
 
         cur = self.conn.execute(
-            "SELECT * FROM transactions WHERE fecha_hora >= ? AND fecha_hora < ? AND deleted_at IS NULL ORDER BY fecha_hora DESC",
+            "SELECT * FROM transactions WHERE fecha_hora >= ? AND fecha_hora < ? AND consumed_at IS NULL ORDER BY fecha_hora DESC",
             (start, end),
         )
         return [dict_from_row(row) for row in cur.fetchall()]
@@ -179,7 +197,7 @@ class MilkDatabase:
         values = list(updates.values()) + [entry_id]
 
         cur = self.conn.execute(
-            f"UPDATE transactions SET {set_clause} WHERE id = ? AND deleted_at IS NULL",
+            f"UPDATE transactions SET {set_clause} WHERE id = ? AND consumed_at IS NULL",
             values,
         )
         self.conn.commit()
@@ -188,11 +206,72 @@ class MilkDatabase:
     def delete_entry(self, entry_id: int) -> bool:
         """Soft delete an entry by id. Returns True if a row was soft-deleted."""
         cur = self.conn.execute(
-            "UPDATE transactions SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL",
+            "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ? AND consumed_at IS NULL",
             (entry_id,)
         )
         self.conn.commit()
         return cur.rowcount > 0
+
+    def consume_fifo(
+        self,
+        cantidad: int,
+        fecha_hora: str,
+        user_id: int,
+        username: Optional[str] = None,
+        notas: Optional[str] = None,
+    ) -> int:
+        """Consume stock using FIFO strategy.
+
+        1. Fetch ENTRADA entries WHERE consumed_at IS NULL ORDER BY fecha_hora ASC, id ASC
+        2. Verify sum of available ENTRADAs >= cantidad (raise ValueError if insufficient)
+        3. Mark ENTRADA entries with consumed_at = datetime('now') in FIFO order until cumulative >= cantidad
+        4. Create a new SALIDA entry recording the consumption
+        5. Return the new SALIDA entry_id
+
+        Args:
+            cantidad: Amount to consume (must be > 0)
+            fecha_hora: ISO format datetime for the SALIDA entry
+            user_id: User consuming the stock
+            username: Optional username
+            notas: Optional notes
+
+        Returns:
+            The ID of the newly created SALIDA entry
+
+        Raises:
+            ValueError: If stock is insufficient
+        """
+        if cantidad <= 0:
+            raise ValueError("cantidad must be positive")
+
+        cur = self.conn.execute(
+            "SELECT id, cantidad FROM transactions WHERE tipo = 'ENTRADA' AND consumed_at IS NULL ORDER BY fecha_hora ASC, id ASC"
+        )
+        entradas = cur.fetchall()
+
+        available = sum(row[1] for row in entradas)
+        if available < cantidad:
+            raise ValueError(f"Insufficient stock: need {cantidad}, available {available}")
+
+        cumulative = 0
+        for row in entradas:
+            entry_id = row[0]
+            entry_cantidad = row[1]
+            self.conn.execute(
+                "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
+                (entry_id,)
+            )
+            cumulative += entry_cantidad
+            if cumulative >= cantidad:
+                break
+
+        cur = self.conn.execute(
+            """INSERT INTO transactions (tipo, cantidad, fecha_hora, user_id, username, notas)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            ("SALIDA", cantidad, fecha_hora, user_id, username, notas),
+        )
+        self.conn.commit()
+        return cur.lastrowid
 
     def reset_database(self, confirm: bool = False) -> int:
         """Hard-delete all rows and reset the autoincrement sequence.
@@ -210,15 +289,15 @@ class MilkDatabase:
         return cur.rowcount
 
     def get_total_stock(self) -> int:
-        """Return current stock: SUM(ENTRADA) - SUM(SALIDA). 0 if empty."""
+        """Return current stock: SUM(all ENTRADAs) - SUM(all SALIDAs). 0 if empty."""
         cur = self.conn.execute(
             """SELECT
                    COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) -
-                   COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0)
-               FROM transactions WHERE deleted_at IS NULL"""
+                   COALESCE(SUM(CASE WHEN tipo = 'SALIDA' THEN cantidad ELSE 0 END), 0)
+               FROM transactions"""
         )
         row = cur.fetchone()
-        return row[0] if row else 0
+        return max(row[0], 0) if row else 0
 
     def get_daily_summary(self, date: str) -> dict[str, int]:
         """Return aggregate for a single day.
@@ -235,7 +314,7 @@ class MilkDatabase:
                    COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) AS total_entradas,
                    COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0) AS total_salidas
                FROM transactions
-               WHERE fecha_hora >= ? AND fecha_hora < ? AND deleted_at IS NULL""",
+               WHERE fecha_hora >= ? AND fecha_hora < ? AND consumed_at IS NULL""",
             (start, end),
         )
         row = cur.fetchone()
