@@ -113,9 +113,9 @@ class MilkDatabase:
         return cur.lastrowid
 
     def get_entry(self, entry_id: int) -> Optional[dict[str, Any]]:
-        """Return a single entry by id, or None if not found."""
+        """Return a single entry by id, or None if not found or soft-deleted."""
         cur = self.conn.execute(
-            "SELECT * FROM transactions WHERE id = ?", (entry_id,)
+            "SELECT * FROM transactions WHERE id = ? AND deleted_at IS NULL", (entry_id,)
         )
         row = cur.fetchone()
         return dict_from_row(row)
@@ -140,7 +140,7 @@ class MilkDatabase:
 
         safe_order = f"{col} {direction}"
         cur = self.conn.execute(
-            f"SELECT * FROM transactions ORDER BY {safe_order}"
+            f"SELECT * FROM transactions WHERE deleted_at IS NULL ORDER BY {safe_order}"
         )
         return [dict_from_row(row) for row in cur.fetchall()]
 
@@ -156,7 +156,7 @@ class MilkDatabase:
         end = next_dt.strftime("%Y-%m-%dT00:00:00")
 
         cur = self.conn.execute(
-            "SELECT * FROM transactions WHERE fecha_hora >= ? AND fecha_hora < ? ORDER BY fecha_hora DESC",
+            "SELECT * FROM transactions WHERE fecha_hora >= ? AND fecha_hora < ? AND deleted_at IS NULL ORDER BY fecha_hora DESC",
             (start, end),
         )
         return [dict_from_row(row) for row in cur.fetchall()]
@@ -179,16 +179,17 @@ class MilkDatabase:
         values = list(updates.values()) + [entry_id]
 
         cur = self.conn.execute(
-            f"UPDATE transactions SET {set_clause} WHERE id = ?",
+            f"UPDATE transactions SET {set_clause} WHERE id = ? AND deleted_at IS NULL",
             values,
         )
         self.conn.commit()
         return cur.rowcount > 0
 
     def delete_entry(self, entry_id: int) -> bool:
-        """Delete an entry by id. Returns True if a row was deleted."""
+        """Soft delete an entry by id. Returns True if a row was soft-deleted."""
         cur = self.conn.execute(
-            "DELETE FROM transactions WHERE id = ?", (entry_id,)
+            "UPDATE transactions SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL",
+            (entry_id,)
         )
         self.conn.commit()
         return cur.rowcount > 0
@@ -199,7 +200,7 @@ class MilkDatabase:
             """SELECT
                    COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) -
                    COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0)
-               FROM transactions"""
+               FROM transactions WHERE deleted_at IS NULL"""
         )
         row = cur.fetchone()
         return row[0] if row else 0
@@ -219,7 +220,7 @@ class MilkDatabase:
                    COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) AS total_entradas,
                    COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0) AS total_salidas
                FROM transactions
-               WHERE fecha_hora >= ? AND fecha_hora < ?""",
+               WHERE fecha_hora >= ? AND fecha_hora < ? AND deleted_at IS NULL""",
             (start, end),
         )
         row = cur.fetchone()

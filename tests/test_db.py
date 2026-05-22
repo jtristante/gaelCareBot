@@ -230,3 +230,121 @@ class TestMilkDatabase:
         """Adding an entry with negative cantidad violates CHECK constraint."""
         with pytest.raises(Exception):
             db.add_entry("ENTRADA", -5, "2026-05-19T10:00:00", 123)
+
+
+class TestSoftDelete:
+    """Test suite for soft delete functionality."""
+
+    def test_soft_delete_returns_true(self, db: MilkDatabase) -> None:
+        """add entry, delete_entry(id) returns True."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        result = db.delete_entry(entry_id)
+        assert result is True
+
+    def test_soft_delete_twice_returns_false(self, db: MilkDatabase) -> None:
+        """delete_entry(id) returns False on second call."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.delete_entry(entry_id)  # First delete
+        result = db.delete_entry(entry_id)  # Second delete
+        assert result is False
+
+    def test_get_entry_returns_none_for_soft_deleted(self, db: MilkDatabase) -> None:
+        """get_entry(id) returns None after soft delete."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.delete_entry(entry_id)
+        result = db.get_entry(entry_id)
+        assert result is None
+
+    def test_get_all_entries_excludes_soft_deleted(self, db: MilkDatabase) -> None:
+        """list excludes the soft-deleted entry."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
+        db.delete_entry(entry_id)
+        entries = db.get_all_entries()
+        assert len(entries) == 1
+        assert entries[0]["cantidad"] == 100
+
+    def test_get_total_stock_excludes_soft_deleted(self, db: MilkDatabase) -> None:
+        """stock decreases when deleting ENTRADA."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        assert db.get_total_stock() == 200
+        db.delete_entry(entry_id)
+        assert db.get_total_stock() == 0
+
+    def test_get_total_stock_excludes_soft_deleted_salida(self, db: MilkDatabase) -> None:
+        """stock increases when deleting SALIDA."""
+        db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 123, "test_user")
+        salida_id = db.add_entry(
+            "SALIDA", 100, "2026-05-19T11:00:00", 123, "test_user"
+        )
+        assert db.get_total_stock() == 200
+        db.delete_entry(salida_id)
+        assert db.get_total_stock() == 300
+
+    def test_get_entries_by_date_excludes_soft_deleted(self, db: MilkDatabase) -> None:
+        """date search excludes soft-deleted entry."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
+        db.delete_entry(entry_id)
+        entries = db.get_entries_by_date("2026-05-19")
+        assert len(entries) == 1
+        assert entries[0]["cantidad"] == 100
+
+    def test_get_daily_summary_excludes_soft_deleted(self, db: MilkDatabase) -> None:
+        """daily summary excludes soft-deleted."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
+        db.delete_entry(entry_id)
+        summary = db.get_daily_summary("2026-05-19")
+        assert summary["total_entradas"] == 100
+        assert summary["balance"] == 100
+
+    def test_update_entry_on_soft_deleted_returns_false(self, db: MilkDatabase) -> None:
+        """update_entry(id) returns False for deleted."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.delete_entry(entry_id)
+        result = db.update_entry(entry_id, cantidad=300)
+        assert result is False
+
+    def test_add_entry_still_works_after_soft_deletes(self, db: MilkDatabase) -> None:
+        """IDs continue incrementing after deletes."""
+        entry_id1 = db.add_entry(
+            "ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.delete_entry(entry_id1)
+        entry_id2 = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T11:00:00", 123, "test_user"
+        )
+        assert entry_id2 > entry_id1
+        entries = db.get_all_entries()
+        assert len(entries) == 1
+        assert entries[0]["cantidad"] == 200
+
+    def test_soft_deleted_entry_has_deleted_at_set(self, db: MilkDatabase) -> None:
+        """the deleted_at field is not NULL after delete."""
+        entry_id = db.add_entry(
+            "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
+        )
+        db.delete_entry(entry_id)
+        # Access the database directly to check deleted_at
+        cur = db.conn.execute(
+            "SELECT deleted_at FROM transactions WHERE id = ?", (entry_id,)
+        )
+        row = cur.fetchone()
+        assert row[0] is not None
