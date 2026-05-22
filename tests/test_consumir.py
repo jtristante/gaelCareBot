@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from pytz import timezone
 from telegram.ext import ConversationHandler
 
 from src import auth
@@ -17,7 +15,6 @@ from src.handlers.consumir import (
     entry_selected,
     confirm_reversal,
     cancel,
-    parse_dd_mm_yyyy,
     SELECTING_ENTRY,
     CONFIRMING,
 )
@@ -25,15 +22,10 @@ from src.messages import (
     MSG_CONSUMED,
     MSG_CANCELLED,
     MSG_SELECT_ENTRY,
-    ERROR_INVALID_AMOUNT,
-    ERROR_INVALID_DATE,
-    ERROR_INSUFFICIENT_STOCK,
-    ERROR_FUTURE_DATE,
+    ERROR_UNAUTHORIZED,
     ERROR_NO_ENTRIES,
     ERROR_ENTRY_NOT_FOUND,
 )
-
-MADRID_TZ = timezone("Europe/Madrid")
 
 
 @pytest.fixture(autouse=True)
@@ -45,58 +37,35 @@ def init_auth_for_tests(monkeypatch):
     auth.init_auth(config)
 
 
-class TestParseDdMmYyyy:
-    """Tests for the parse_dd_mm_yyyy helper function."""
-
-    def test_valid_date(self):
-        result = parse_dd_mm_yyyy("19/05/2026")
-        assert result is not None
-        assert result.day == 19
-        assert result.month == 5
-        assert result.year == 2026
-
-    def test_invalid_format(self):
-        assert parse_dd_mm_yyyy("2026-05-19") is None
-        assert parse_dd_mm_yyyy("19-05-2026") is None
-        assert parse_dd_mm_yyyy("05/19/2026") is None
-
-    def test_invalid_calendar_date(self):
-        assert parse_dd_mm_yyyy("32/13/2026") is None
-        assert parse_dd_mm_yyyy("31/02/2026") is None
-        assert parse_dd_mm_yyyy("00/05/2026") is None
-
-    def test_empty_string(self):
-        assert parse_dd_mm_yyyy("") is None
-
-
-class TestConsumirCommandArgsMode:
-    """Tests for the consumir_command handler with args (FIFO consumption mode)."""
+class TestConsumirCommandReversalMode:
+    """Tests for the /consumir command (always enters reversal mode)."""
 
     @pytest.fixture
     def mock_db(self):
-        """Create a mock database with consume_fifo method."""
         db = Mock()
-        db.consume_fifo = Mock(return_value=2)
-        db.get_total_stock = Mock(return_value=200)
+        db.get_all_entries = Mock(return_value=[])
+        db.get_entry = Mock(return_value=None)
+        db.update_entry = Mock(return_value=True)
+        db.conn = Mock()
+        db.conn.execute = Mock()
+        db.conn.commit = Mock()
         return db
 
     @pytest.fixture
     def setup_context(self, mock_db):
-        """Create a mock context with the database in bot_data."""
-        def _create(args: list[str] | None = None):
+        def _create(user_data: dict | None = None):
             ctx = Mock()
             ctx.bot = Mock()
             ctx.bot.send_message = AsyncMock()
             ctx.bot_data = {"db": mock_db}
-            ctx.user_data = {}
-            ctx.args = args or []
+            ctx.user_data = user_data or {}
+            ctx.args = []
             ctx.match = None
             return ctx
         return _create
 
     @pytest.fixture
     def setup_update(self):
-        """Create a mock update with an authorized user."""
         def _create(user_id: int = 123):
             update = Mock()
             update.effective_user = Mock()
@@ -110,289 +79,75 @@ class TestConsumirCommandArgsMode:
         return _create
 
     @pytest.mark.asyncio
-    async def test_consumir_valid(self, setup_update, setup_context, mock_db):
-        """Test valid consumption: 100ml on 19/05/2026 with 200ml stock."""
+    async def test_consumir_no_args_enters_reversal_mode(self, setup_update, setup_context, mock_db):
         update = setup_update(123)
-        ctx = setup_context(["100", "19/05/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify consume_fifo was called correctly
-        mock_db.consume_fifo.assert_called_once()
-        call_args = mock_db.consume_fifo.call_args
-        assert call_args.kwargs["cantidad"] == 100
-        assert call_args.kwargs["add_at"] == "2026-05-19T12:00:00"
-        assert call_args.kwargs["user_id"] == 123
-        assert call_args.kwargs["username"] == "test_user"
-        assert call_args.kwargs["notas"] is None
-
-        # Verify success message
-        update.message.reply_text.assert_called_once_with(
-            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
-        )
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_insufficient_stock(self, setup_update, setup_context, mock_db):
-        """Test consumption with insufficient stock: consume_fifo raises ValueError."""
-        mock_db.consume_fifo.side_effect = ValueError("Insufficient stock: need 100, available 50")
-        mock_db.get_total_stock.return_value = 50
-
-        update = setup_update(123)
-        ctx = setup_context(["100", "19/05/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify consume_fifo was called
-        mock_db.consume_fifo.assert_called_once()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(
-            ERROR_INSUFFICIENT_STOCK.format(stock=50)
-        )
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_invalid_date(self, setup_update, setup_context, mock_db):
-        """Test consumption with invalid calendar date: 99/99/2026."""
-        update = setup_update(123)
-        ctx = setup_context(["100", "99/99/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_INVALID_DATE)
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_wrong_format(self, setup_update, setup_context, mock_db):
-        """Test consumption with wrong date format: 2026-05-19 (ISO)."""
-        update = setup_update(123)
-        ctx = setup_context(["100", "2026-05-19"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_INVALID_DATE)
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_negative(self, setup_update, setup_context, mock_db):
-        """Test consumption with negative amount: -50ml."""
-        update = setup_update(123)
-        ctx = setup_context(["-50", "19/05/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_INVALID_AMOUNT)
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_zero(self, setup_update, setup_context, mock_db):
-        """Test consumption with zero amount."""
-        update = setup_update(123)
-        ctx = setup_context(["0", "19/05/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_INVALID_AMOUNT)
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_exact_stock(self, setup_update, setup_context, mock_db):
-        """Test consuming exactly all available stock: 100ml with 100ml available."""
-        mock_db.consume_fifo.return_value = 2
-
-        update = setup_update(123)
-        ctx = setup_context(["100", "19/05/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify consume_fifo was called
-        mock_db.consume_fifo.assert_called_once()
-        call_args = mock_db.consume_fifo.call_args
-        assert call_args.kwargs["cantidad"] == 100
-
-        # Verify success message
-        update.message.reply_text.assert_called_once_with(
-            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
-        )
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_future_date(self, setup_update, setup_context, mock_db):
-        """Test consumption with future date."""
-        # Create a date far in the future
-        future_date = "01/01/2099"
-
-        update = setup_update(123)
-        ctx = setup_context(["100", future_date])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_FUTURE_DATE)
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_missing_args_enters_reversal_mode(self, setup_update, setup_context, mock_db):
-        """Test that no args enters reversal mode (SELECTING_ENTRY state)."""
-        update = setup_update(123)
-        ctx = setup_context([])  # No args
-
-        # Mock get_all_entries to return an ENTRADA entry
+        ctx = setup_context()
         mock_db.get_all_entries.return_value = [
             {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00"}
         ]
 
         result = await consumir_command(update, ctx)
 
-        # Verify no consume_fifo call (not args mode)
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify get_all_entries was called (reversal mode)
         mock_db.get_all_entries.assert_called_once()
-
-        # Verify returned SELECTING_ENTRY state
         assert result == SELECTING_ENTRY
 
     @pytest.mark.asyncio
-    async def test_consumir_missing_date_enters_reversal_mode(self, setup_update, setup_context, mock_db):
-        """Test that only amount arg (missing date) enters reversal mode."""
+    async def test_consumir_no_entries(self, setup_update, setup_context, mock_db):
         update = setup_update(123)
-        ctx = setup_context(["100"])  # Only amount, no date
+        ctx = setup_context()
+        mock_db.get_all_entries.return_value = []
 
-        # Mock get_all_entries to return an ENTRADA entry
+        result = await consumir_command(update, ctx)
+
+        update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
+        assert result == ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_consumir_shows_only_entrada(self, setup_update, setup_context, mock_db):
+        update = setup_update(123)
+        ctx = setup_context()
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00"}
+            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
+            {"id": 2, "tipo": "SALIDA", "cantidad": 50, "add_at": "2026-05-19T11:00:00", "notas": None},
         ]
 
         result = await consumir_command(update, ctx)
 
-        # Verify no consume_fifo call (not args mode)
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify get_all_entries was called (reversal mode)
-        mock_db.get_all_entries.assert_called_once()
-
-        # Verify returned SELECTING_ENTRY state
         assert result == SELECTING_ENTRY
+        call_args = update.message.reply_text.call_args
+        keyboard = call_args.kwargs["reply_markup"].inline_keyboard
+        assert len(keyboard) == 2  # 1 ENTRADA + cancel button
+        assert "ENTRADA" in keyboard[0][0].text
 
     @pytest.mark.asyncio
     async def test_consumir_unauthorized(self, setup_update, setup_context, mock_db):
-        """Test that unauthorized users are blocked by the decorator."""
-        # User ID 999 is not in authorized list (from conftest.py, only 123 is authorized)
         update = setup_update(999)
-        ctx = setup_context(["100", "19/05/2026"])
+        ctx = setup_context()
 
         result = await consumir_command(update, ctx)
 
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify unauthorized error message
-        from src.messages import ERROR_UNAUTHORIZED
         update.message.reply_text.assert_called_once_with(ERROR_UNAUTHORIZED)
-
-        # Decorator blocks before returning state, so no state returned
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_consumir_with_notes(self, setup_update, setup_context, mock_db):
-        """Test consumption with notes."""
-        update = setup_update(123)
-        ctx = setup_context(["100", "19/05/2026", "Biberón", "de", "la", "mañana"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify consume_fifo was called with notes
-        mock_db.consume_fifo.assert_called_once()
-        call_args = mock_db.consume_fifo.call_args
-        assert call_args.kwargs["cantidad"] == 100
-        assert call_args.kwargs["notas"] == "Biberón de la mañana"
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_invalid_amount_string(self, setup_update, setup_context, mock_db):
-        """Test consumption with non-numeric amount."""
-        update = setup_update(123)
-        ctx = setup_context(["abc", "19/05/2026"])
-
-        result = await consumir_command(update, ctx)
-
-        # Verify no database operations
-        mock_db.consume_fifo.assert_not_called()
-
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_INVALID_AMOUNT)
-
-        # Verify returned ConversationHandler.END
-        assert result == ConversationHandler.END
-
-    @pytest.mark.asyncio
-    async def test_consumir_no_db_in_context(self, setup_update, mock_db):
-        """Test consumption when database is not in bot_data."""
+    async def test_consumir_no_db_in_context(self, setup_update):
         update = setup_update(123)
         ctx = Mock()
         ctx.bot = Mock()
         ctx.bot.send_message = AsyncMock()
-        ctx.bot_data = {}  # No db key
+        ctx.bot_data = {}
         ctx.user_data = {}
-        ctx.args = ["100", "19/05/2026"]
+        ctx.args = []
         ctx.match = None
 
         result = await consumir_command(update, ctx)
 
-        # Verify error message
-        update.message.reply_text.assert_called_once_with(ERROR_INVALID_AMOUNT)
-
-        # Verify returned ConversationHandler.END
+        update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == ConversationHandler.END
 
     @pytest.mark.asyncio
     async def test_consumir_fifo_salida_has_consumed_at(self, db):
-        """Test that consume_fifo() creates a SALIDA entry with consumed_at set.
-
-        This is a pure DB-level test (no Telegram mocks). It uses the real
-        in-memory MilkDatabase fixture directly.
-
-        Verifies consumed_at is set by consume_fifo() on the new SALIDA entry.
-        """
+        """Test that consume_fifo() creates a SALIDA entry with consumed_at set."""
         db.add_entry(
             "ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user", None,
         )
@@ -413,8 +168,8 @@ class TestConsumirCommandArgsMode:
         )
 
 
-class TestReversalMode:
-    """Tests for the /consumir command no-args mode (reversal)."""
+class TestReversalFlowInteractions:
+    """Tests for the reversal conversation flow (callback interactions)."""
 
     @pytest.fixture
     def mock_db(self):

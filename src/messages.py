@@ -19,7 +19,7 @@ HELP_MSG = (
     "/start — Mensaje de bienvenida e instrucciones\n"
     "/help — Mostrar esta ayuda\n"
     "/agregar <code>&lt;cantidad&gt;</code> <code>[notas]</code> — Registrar leche extraída hoy\n"
-    "/consumir <code>&lt;cantidad&gt;</code> <code>&lt;DD/MM/YYYY&gt;</code> <code>[notas]</code> — Registrar leche consumida\n"
+    "/consumir — Registrar leche consumida (seleccionar de la lista)\n"
     "/stock — Ver historial completo\n"
     "/total — Ver stock total disponible\n"
     "/editar — Editar una entrada existente\n"

@@ -85,7 +85,7 @@ python -m src.bot
 |---|---|
 | `/start` | Mensaje de bienvenida e instrucciones |
 | `/agregar <cantidad>` | Registrar una extracción de leche (en ml) |
-| `/consumir <cantidad>` | Registrar un consumo de leche (en ml) |
+| `/consumir` | Registrar un consumo de leche (seleccionar de la lista) |
 | `/stock` | Consultar el stock actual disponible |
 | `/total` | Ver el total acumulado de extracciones y consumos |
 
