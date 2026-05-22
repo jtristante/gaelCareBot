@@ -11,9 +11,11 @@ from src.handlers.editar import (
     EDITING_FIELD,
     EDITING_VALUE,
     CONFIRMING,
+    SELECTING_TIPO,
     editar_start,
     entry_selected,
     field_selected,
+    tipo_selected,
     receive_value,
     confirm_edit,
     cancel,
@@ -37,6 +39,7 @@ from src.messages import (
     BTN_EDIT_CANTIDAD,
     BTN_EDIT_FECHA,
     BTN_EDIT_NOTAS,
+    BTN_EDIT_TIPO,
 )
 
 
@@ -137,7 +140,7 @@ class TestEditarStart:
 
         result = await editar_start(update, ctx)
 
-        mock_db.get_all_entries.assert_called_once_with(order_by="fecha_hora DESC")
+        mock_db.get_all_entries.assert_called_once_with(order_by="fecha_hora DESC", include_consumed=True)
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == -1  # ConversationHandler.END
 
@@ -154,7 +157,7 @@ class TestEditarStart:
 
         result = await editar_start(update, ctx)
 
-        mock_db.get_all_entries.assert_called_once_with(order_by="fecha_hora DESC")
+        mock_db.get_all_entries.assert_called_once_with(order_by="fecha_hora DESC", include_consumed=True)
         update.message.reply_text.assert_called_once()
         call_args = update.message.reply_text.call_args
         assert call_args[0][0] == MSG_SELECT_ENTRY
@@ -507,3 +510,147 @@ class TestEditarInvalidCantidad:
 
         update.message.reply_text.assert_called_once_with(ERROR_INVALID_AMOUNT)
         assert result == EDITING_VALUE  # Stay in EDITING_VALUE state
+
+
+class TestEditarModifyTipo:
+    """Tests for modifying the tipo field."""
+
+    @pytest.fixture
+    def mock_db(self):
+        """Create a mock database with conn.execute."""
+        db = Mock()
+        db.update_entry = Mock(return_value=True)
+        db.conn = Mock()
+        db.conn.execute = Mock()
+        db.conn.commit = Mock()
+        return db
+
+    @pytest.fixture
+    def setup_callback_update(self):
+        """Create a mock update with callback query."""
+        def _create(callback_data: str, user_id: int = 123):
+            update = Mock()
+            update.effective_user = Mock()
+            update.effective_user.id = user_id
+            update.message = None
+            update.callback_query = Mock()
+            update.callback_query.data = callback_data
+            update.callback_query.answer = AsyncMock()
+            update.callback_query.edit_message_text = AsyncMock()
+            return update
+        return _create
+
+    @pytest.fixture
+    def setup_context(self, mock_db):
+        """Create a mock context with database."""
+        def _create(user_data: dict | None = None):
+            ctx = Mock()
+            ctx.bot.send_message = AsyncMock()
+            ctx.bot_data = {"db": mock_db}
+            ctx.user_data = user_data or {}
+            ctx.args = []
+            ctx.match = None
+            return ctx
+        return _create
+
+    @pytest.mark.asyncio
+    async def test_editar_select_tipo_field(self, setup_callback_update, setup_context):
+        """Test selecting tipo field shows ENTRADA/SALIDA options."""
+        update = setup_callback_update("field_tipo")
+        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"tipo": "ENTRADA"}})
+
+        result = await field_selected(update, ctx)
+
+        update.callback_query.answer.assert_called_once()
+        assert ctx.user_data["edit_field"] == "tipo"
+        assert result == SELECTING_TIPO
+        # Verify the keyboard has ENTRADA and SALIDA options
+        call_args = update.callback_query.edit_message_text.call_args
+        assert "Selecciona el nuevo tipo:" in call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_editar_tipo_entrada_to_salida(self, setup_callback_update, setup_context, mock_db):
+        """Test changing tipo from ENTRADA to SALIDA sets consumed_at."""
+        # Step 1: Select SALIDA
+        update = setup_callback_update("tipo_SALIDA")
+        ctx = setup_context({
+            "edit_entry_id": 1,
+            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
+            "edit_field": "tipo"
+        })
+
+        result = await tipo_selected(update, ctx)
+
+        update.callback_query.answer.assert_called_once()
+        assert ctx.user_data["edit_new_value"] == "SALIDA"
+        assert result == CONFIRMING
+
+        # Step 2: Confirm the edit
+        update = setup_callback_update("confirm")
+
+        result = await confirm_edit(update, ctx)
+
+        update.callback_query.answer.assert_called_once()
+        mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
+        # Verify consumed_at was set
+        mock_db.conn.execute.assert_called_once()
+        call_args = mock_db.conn.execute.call_args
+        assert "consumed_at = datetime('now')" in call_args[0][0]
+        mock_db.conn.commit.assert_called_once()
+        update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
+        assert result == -1  # ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_editar_tipo_salida_to_entrada(self, setup_callback_update, setup_context, mock_db):
+        """Test changing tipo from SALIDA to ENTRADA clears consumed_at."""
+        # Step 1: Select ENTRADA
+        update = setup_callback_update("tipo_ENTRADA")
+        ctx = setup_context({
+            "edit_entry_id": 1,
+            "edit_entry_original": {"tipo": "SALIDA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
+            "edit_field": "tipo"
+        })
+
+        result = await tipo_selected(update, ctx)
+
+        update.callback_query.answer.assert_called_once()
+        assert ctx.user_data["edit_new_value"] == "ENTRADA"
+        assert result == CONFIRMING
+
+        # Step 2: Confirm the edit
+        update = setup_callback_update("confirm")
+
+        result = await confirm_edit(update, ctx)
+
+        update.callback_query.answer.assert_called_once()
+        mock_db.update_entry.assert_called_once_with(1, tipo="ENTRADA")
+        # Verify consumed_at was cleared
+        mock_db.conn.execute.assert_called_once()
+        call_args = mock_db.conn.execute.call_args
+        assert "consumed_at = NULL" in call_args[0][0]
+        mock_db.conn.commit.assert_called_once()
+        update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
+        assert result == -1  # ConversationHandler.END
+
+    @pytest.mark.asyncio
+    async def test_editar_tipo_same_value_no_consumed_at_change(self, setup_callback_update, setup_context, mock_db):
+        """Test changing tipo to same value doesn't modify consumed_at."""
+        # Select ENTRADA when already ENTRADA
+        update = setup_callback_update("tipo_ENTRADA")
+        ctx = setup_context({
+            "edit_entry_id": 1,
+            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "fecha_hora": "2026-05-19T10:00:00", "notas": None},
+            "edit_field": "tipo"
+        })
+
+        result = await tipo_selected(update, ctx)
+        assert result == CONFIRMING
+
+        # Confirm the edit
+        update = setup_callback_update("confirm")
+        result = await confirm_edit(update, ctx)
+
+        mock_db.update_entry.assert_called_once_with(1, tipo="ENTRADA")
+        # Verify consumed_at was NOT modified
+        mock_db.conn.execute.assert_not_called()
+        mock_db.conn.commit.assert_not_called()

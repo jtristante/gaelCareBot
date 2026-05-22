@@ -27,6 +27,7 @@ from src.messages import (
     BTN_EDIT_CANTIDAD,
     BTN_EDIT_FECHA,
     BTN_EDIT_NOTAS,
+    BTN_EDIT_TIPO,
     MSG_CANCELLED,
     MSG_CONFIRM_EDIT,
     MSG_ENTER_NEW_VALUE,
@@ -42,6 +43,7 @@ SELECTING_ENTRY = 0
 EDITING_FIELD = 1
 EDITING_VALUE = 2
 CONFIRMING = 3
+SELECTING_TIPO = 4
 
 
 @authorized_only
@@ -57,8 +59,8 @@ async def editar_start(update: Update, context: Any) -> int:
         await update.message.reply_text(ERROR_NO_ENTRIES)
         return ConversationHandler.END
 
-    # Get last 20 entries
-    entries = db.get_all_entries(order_by="fecha_hora DESC")[:20]
+    # Get last 20 entries (including consumed)
+    entries = db.get_all_entries(order_by="fecha_hora DESC", include_consumed=True)[:20]
 
     if not entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
@@ -121,6 +123,7 @@ async def entry_selected(update: Update, context: Any) -> int:
         [InlineKeyboardButton(BTN_EDIT_CANTIDAD, callback_data="field_cantidad")],
         [InlineKeyboardButton(BTN_EDIT_FECHA, callback_data="field_fecha")],
         [InlineKeyboardButton(BTN_EDIT_NOTAS, callback_data="field_notas")],
+        [InlineKeyboardButton(BTN_EDIT_TIPO, callback_data="field_tipo")],
         [InlineKeyboardButton(BTN_CANCEL, callback_data="cancel")],
     ]
 
@@ -153,14 +156,76 @@ async def field_selected(update: Update, context: Any) -> int:
         "cantidad": BTN_EDIT_CANTIDAD,
         "fecha": BTN_EDIT_FECHA,
         "notas": BTN_EDIT_NOTAS,
+        "tipo": BTN_EDIT_TIPO,
     }
 
     context.user_data["edit_field"] = field_name
+
+    # Handle tipo field differently - show ENTRADA/SALIDA options
+    if field_name == "tipo":
+        keyboard = [
+            [InlineKeyboardButton("ENTRADA", callback_data="tipo_ENTRADA")],
+            [InlineKeyboardButton("SALIDA", callback_data="tipo_SALIDA")],
+            [InlineKeyboardButton(BTN_CANCEL, callback_data="cancel")],
+        ]
+        await query.edit_message_text(
+            "Selecciona el nuevo tipo:", reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return SELECTING_TIPO
 
     await query.edit_message_text(
         MSG_ENTER_NEW_VALUE.format(campo=field_display_map.get(field_name, field_name))
     )
     return EDITING_VALUE
+
+
+async def tipo_selected(update: Update, context: Any) -> int:
+    """Handle tipo selection and show confirmation."""
+    query = update.callback_query
+    await query.answer()
+
+    callback_data = query.data
+
+    if callback_data == "cancel":
+        await query.edit_message_text(MSG_CANCELLED)
+        return ConversationHandler.END
+
+    # Parse tipo value from callback data (format: tipo_{ENTRADA|SALIDA})
+    try:
+        tipo_value = callback_data.split("_", 1)[1]
+    except IndexError:
+        await query.edit_message_text(MSG_CANCELLED)
+        return ConversationHandler.END
+
+    # Store the selected tipo
+    context.user_data["edit_new_value"] = tipo_value
+    context.user_data["edit_new_value_raw"] = tipo_value
+
+    # Get original entry for display
+    entry_id = context.user_data.get("edit_entry_id")
+    original_entry = context.user_data.get("edit_entry_original", {})
+    fecha = original_entry.get("fecha_hora", "N/A")[:10] if original_entry.get("fecha_hora") else "N/A"
+
+    # Build confirmation message
+    entry_info = (
+        f"ID: #{entry_id}\n"
+        f"Tipo: {original_entry.get('tipo', 'N/A')}\n"
+        f"Cantidad: {original_entry.get('cantidad', 'N/A')}ml\n"
+        f"Fecha: {fecha}\n"
+        f"Notas: {original_entry.get('notas') or 'Ninguna'}\n\n"
+        f"Nuevo valor para tipo: {tipo_value}"
+    )
+
+    keyboard = [
+        [InlineKeyboardButton(BTN_CONFIRM, callback_data="confirm")],
+        [InlineKeyboardButton(BTN_DENY, callback_data="cancel")],
+    ]
+
+    await query.edit_message_text(
+        MSG_CONFIRM_EDIT.format(entry_info=entry_info),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+    return CONFIRMING
 
 
 async def receive_value(update: Update, context: Any) -> int:
@@ -299,6 +364,23 @@ async def confirm_edit(update: Update, context: Any) -> int:
         # Update the entry
         success = db.update_entry(entry_id, **update_kwargs)
 
+        # Handle consumed_at for tipo changes
+        if success and field_name == "tipo":
+            original_entry = context.user_data.get("edit_entry_original", {})
+            original_tipo = original_entry.get("tipo", "")
+            if original_tipo == "ENTRADA" and new_value == "SALIDA":
+                db.conn.execute(
+                    "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
+                    (entry_id,)
+                )
+                db.conn.commit()
+            elif original_tipo == "SALIDA" and new_value == "ENTRADA":
+                db.conn.execute(
+                    "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+                    (entry_id,)
+                )
+                db.conn.commit()
+
         if success:
             await query.edit_message_text(MSG_UPDATED)
         else:
@@ -350,6 +432,10 @@ editar_conv_handler = ConversationHandler(
         ],
         EDITING_VALUE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, receive_value),
+        ],
+        SELECTING_TIPO: [
+            CallbackQueryHandler(tipo_selected, pattern=r"^tipo_\w+$"),
+            CallbackQueryHandler(cancel, pattern="^cancel$"),
         ],
         CONFIRMING: [
             CallbackQueryHandler(confirm_edit, pattern="^confirm$"),
