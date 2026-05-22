@@ -194,6 +194,21 @@ class MilkDatabase:
         self.conn.commit()
         return cur.rowcount > 0
 
+    def reset_database(self, confirm: bool = False) -> int:
+        """Hard-delete all rows and reset the autoincrement sequence.
+
+        This is a destructive operation that permanently removes all data.
+        Pass ``confirm=True`` to proceed.
+        Returns the number of rows deleted.
+        """
+        if not confirm:
+            raise ValueError("Must pass confirm=True to reset database")
+
+        cur = self.conn.execute("DELETE FROM transactions")
+        self.conn.execute("DELETE FROM sqlite_sequence WHERE name = 'transactions'")
+        self.conn.commit()
+        return cur.rowcount
+
     def get_total_stock(self) -> int:
         """Return current stock: SUM(ENTRADA) - SUM(SALIDA). 0 if empty."""
         cur = self.conn.execute(

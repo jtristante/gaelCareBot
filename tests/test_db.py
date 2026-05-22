@@ -348,3 +348,50 @@ class TestSoftDelete:
         )
         row = cur.fetchone()
         assert row[0] is not None
+
+
+class TestResetDatabase:
+    """Test suite for database reset functionality."""
+
+    def test_reset_clears_all_entries(self, db: MilkDatabase) -> None:
+        """reset_database removes all entries."""
+        db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
+        db.add_entry("SALIDA", 50, "2026-05-19T11:00:00", 123, "test_user")
+        db.reset_database(confirm=True)
+        assert db.get_all_entries() == []
+
+    def test_reset_zeroes_total_stock(self, db: MilkDatabase) -> None:
+        """reset_database makes total stock 0."""
+        db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 123, "test_user")
+        db.add_entry("SALIDA", 100, "2026-05-19T11:00:00", 123, "test_user")
+        db.reset_database(confirm=True)
+        assert db.get_total_stock() == 0
+
+    def test_reset_resets_id_sequence(self, db: MilkDatabase) -> None:
+        """after reset, next entry gets id 1."""
+        db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
+        db.add_entry("SALIDA", 50, "2026-05-19T11:00:00", 123, "test_user")
+        db.reset_database(confirm=True)
+        new_id = db.add_entry("ENTRADA", 100, "2026-05-20T10:00:00", 123, "test_user")
+        assert new_id == 1
+
+    def test_reset_preserves_schema(self, db: MilkDatabase) -> None:
+        """after reset, the deleted_at column still exists."""
+        db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
+        db.reset_database(confirm=True)
+        cur = db.conn.execute("PRAGMA table_info(transactions)")
+        columns = {row[1] for row in cur.fetchall()}
+        assert "deleted_at" in columns
+
+    def test_reset_idempotent(self, db: MilkDatabase) -> None:
+        """calling reset_database twice does not raise."""
+        db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
+        db.reset_database(confirm=True)
+        # Second reset returns 0 (no rows to delete)
+        deleted = db.reset_database(confirm=True)
+        assert deleted == 0
+
+    def test_reset_raises_without_confirm(self, db: MilkDatabase) -> None:
+        """reset_database() without confirm raises ValueError."""
+        with pytest.raises(ValueError, match="Must pass confirm=True to reset database"):
+            db.reset_database()
