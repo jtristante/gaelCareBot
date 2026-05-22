@@ -59,8 +59,8 @@ async def editar_start(update: Update, context: Any) -> int:
         await update.message.reply_text(ERROR_NO_ENTRIES)
         return ConversationHandler.END
 
-    # Get last 20 entries (including consumed)
-    entries = db.get_all_entries(order_by="add_at DESC", include_consumed=True)[:20]
+    # Get all entries (including consumed)
+    entries = db.get_all_entries(order_by="add_at DESC", include_consumed=True)
 
     if not entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
@@ -370,7 +370,7 @@ async def confirm_edit(update: Update, context: Any) -> int:
             original_tipo = original_entry.get("tipo", "")
             if original_tipo == "ENTRADA" and new_value == "SALIDA":
                 db.conn.execute(
-                    "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
+                    "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
                     (entry_id,)
                 )
                 db.conn.commit()

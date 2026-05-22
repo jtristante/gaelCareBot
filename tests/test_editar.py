@@ -595,7 +595,7 @@ class TestEditarModifyTipo:
         # Verify consumed_at was set
         mock_db.conn.execute.assert_called_once()
         call_args = mock_db.conn.execute.call_args
-        assert "consumed_at = datetime('now')" in call_args[0][0]
+        assert "consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now')" in call_args[0][0]
         mock_db.conn.commit.assert_called_once()
         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
         assert result == -1  # ConversationHandler.END

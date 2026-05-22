@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     user_id INTEGER NOT NULL,
     username TEXT,
     notas TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', 'now')),
     consumed_at TEXT DEFAULT NULL
 )
 """
@@ -219,7 +219,7 @@ class MilkDatabase:
     def delete_entry(self, entry_id: int) -> bool:
         """Soft delete an entry by id. Returns True if a row was soft-deleted."""
         cur = self.conn.execute(
-            "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ? AND consumed_at IS NULL",
+            "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ? AND consumed_at IS NULL",
             (entry_id,)
         )
         self.conn.commit()
@@ -271,7 +271,7 @@ class MilkDatabase:
             entry_id = row[0]
             entry_cantidad = row[1]
             self.conn.execute(
-                "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
+                "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
                 (entry_id,)
             )
             cumulative += entry_cantidad
@@ -280,7 +280,7 @@ class MilkDatabase:
 
         cur = self.conn.execute(
             """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, consumed_at)
-               VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
+               VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%S', 'now'))""",
             ("SALIDA", cantidad, add_at, user_id, username, notas),
         )
         self.conn.commit()

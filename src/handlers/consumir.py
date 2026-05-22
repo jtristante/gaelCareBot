@@ -210,7 +210,7 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
 
     # Get all entries, then filter for ENTRADA only (not consumed)
     all_entries = db.get_all_entries(order_by="add_at DESC", include_consumed=False)
-    entrada_entries = [e for e in all_entries if e["tipo"] == "ENTRADA"][:20]
+    entrada_entries = [e for e in all_entries if e["tipo"] == "ENTRADA"]
 
     if not entrada_entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
@@ -335,7 +335,7 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         if success:
             # Also set consumed_at to now() for the entry
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
+                "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
                 (entry_id,)
             )
             db.conn.commit()
