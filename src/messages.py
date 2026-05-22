@@ -23,7 +23,7 @@ HELP_MSG = (
     "/stock — Ver historial completo\n"
     "/total — Ver stock total disponible\n"
     "/editar — Editar una entrada existente\n"
-    "/eliminar — Eliminar una entrada"
+
 )
 
 # ── Error messages ──────────────────────────────────────────────────────────
@@ -68,6 +68,9 @@ MSG_STOCK_TOTAL_ZERO = "📊 Stock total: 0 ml. ¡Es hora de extraer!"
 
 # Confirmation after deleting an entry.
 MSG_DELETED = "🗑️ Entrada eliminada correctamente."
+
+# Confirmation after reversing an entry (ENTRADA → SALIDA).
+MSG_REVERSED = "🔄 Entrada #{entry_id} cambiada a SALIDA."
 
 # Confirmation after updating an entry.
 MSG_UPDATED = "✏️ Entrada actualizada correctamente."
@@ -139,3 +142,6 @@ BTN_EDIT_FECHA = "Fecha"
 
 # Edit button for the "notas" field.
 BTN_EDIT_NOTAS = "Notas"
+
+# Edit button for the "tipo" field.
+BTN_EDIT_TIPO = "Tipo"

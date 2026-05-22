@@ -15,9 +15,8 @@ from src.config import load_config
 from src.db import MilkDatabase
 from src.group_notifier import init_notifier
 from src.handlers.agregar import agregar_command
-from src.handlers.consumir import consumir_command
+from src.handlers.consumir import consumir_conv_handler
 from src.handlers.editar import editar_conv_handler
-from src.handlers.eliminar import eliminar_conv_handler
 from src.handlers.error import error_handler
 from src.handlers.start import start_command
 from src.handlers.stock import stock_command
@@ -54,11 +53,10 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("agregar", agregar_command))
-    application.add_handler(CommandHandler("consumir", consumir_command))
+    application.add_handler(consumir_conv_handler)
     application.add_handler(CommandHandler("stock", stock_command))
     application.add_handler(CommandHandler("total", total_command))
     application.add_handler(editar_conv_handler)
-    application.add_handler(eliminar_conv_handler)
 
     application.add_error_handler(error_handler)
 

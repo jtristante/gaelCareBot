@@ -32,8 +32,8 @@ async def test_help_unauthorized(unauthorized_update, mock_context):
 
 
 async def test_help_content(authorized_update, mock_context):
-    """HELP_MSG should list all 8 commands."""
+    """HELP_MSG should list all 7 commands."""
     await help_command(authorized_update, mock_context)
     call_args = authorized_update.message.reply_text.call_args[0][0]
-    for cmd in ["/start", "/help", "/agregar", "/consumir", "/stock", "/total", "/editar", "/eliminar"]:
+    for cmd in ["/start", "/help", "/agregar", "/consumir", "/stock", "/total", "/editar"]:
         assert cmd in call_args, f"Missing command: {cmd}"
