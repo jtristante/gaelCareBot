@@ -337,8 +337,8 @@ class TestReversalFlowInteractions:
         # Verify consumed_at was set via raw SQL
         mock_db.conn.execute.assert_called_once()
         call_args = mock_db.conn.execute.call_args
-        assert "consumed_at" in call_args[0][0]
-        assert call_args[0][1] == (1,)  # entry_id
+        assert "consumed_at = ?" in call_args[0][0]
+        assert call_args[0][1][1] == 1  # second param is entry_id
 
         # Verify commit was called
         mock_db.conn.commit.assert_called_once()

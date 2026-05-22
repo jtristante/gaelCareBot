@@ -16,6 +16,7 @@ from telegram.ext import (
 )
 
 from src.auth import authorized_only
+from src.db import now_madrid
 from src.messages import (
     ERROR_ENTRY_NOT_FOUND,
     ERROR_INVALID_AMOUNT,
@@ -370,8 +371,8 @@ async def confirm_edit(update: Update, context: Any) -> int:
             original_tipo = original_entry.get("tipo", "")
             if original_tipo == "ENTRADA" and new_value == "SALIDA":
                 db.conn.execute(
-                    "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
-                    (entry_id,)
+                    "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                    (now_madrid(), entry_id)
                 )
                 db.conn.commit()
             elif original_tipo == "SALIDA" and new_value == "ENTRADA":

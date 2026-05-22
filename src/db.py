@@ -9,6 +9,11 @@ MADRID_TZ = timezone(timedelta(hours=2))  # CEST (UTC+2, May 2026)
 # For non-DST periods this would be UTC+1; for simplicity we use a fixed +2 offset
 # during the May–October window. Production should use zoneinfo or pytz.
 
+
+def now_madrid() -> str:
+    """Return the current datetime in Europe/Madrid as ISO-8601 without timezone."""
+    return datetime.now(MADRID_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+
 _VALID_COLUMNS = frozenset(
     {"tipo", "cantidad", "add_at", "user_id", "username", "notas"}
 )
@@ -24,7 +29,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     user_id INTEGER NOT NULL,
     username TEXT,
     notas TEXT,
-    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', 'now')),
+            created_at TEXT NOT NULL,
     consumed_at TEXT DEFAULT NULL
 )
 """
@@ -123,9 +128,9 @@ class MilkDatabase:
             raise ValueError("notas cannot exceed 200 characters")
 
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (tipo, cantidad, add_at, user_id, username, notas),
+            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (tipo, cantidad, add_at, user_id, username, notas, now_madrid()),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -196,7 +201,20 @@ class MilkDatabase:
                ORDER BY add_at DESC""",
             (start, end, start, end, start, end),
         )
-        return [dict_from_row(row) for row in cur.fetchall()]
+        entries = [dict_from_row(row) for row in cur.fetchall()]
+
+        # Reversal SALIDAs on the same day represent both an extraction
+        # and a consumption. Add synthetic ENTRADA entries so the daily
+        # summary shows both sides.
+        synthetic = []
+        for entry in entries:
+            if entry["tipo"] == "SALIDA" and entry.get("consumed_at"):
+                salida_add_date = entry["add_at"][:10] if entry["add_at"] else ""
+                if salida_add_date == date:
+                    synthetic.append({**entry, "tipo": "ENTRADA"})
+        entries.extend(synthetic)
+        entries.sort(key=lambda e: e["add_at"], reverse=True)
+        return entries
 
     def update_entry(self, entry_id: int, **kwargs: Any) -> bool:
         """Update provided fields on an entry. Returns True if a row was updated."""
@@ -225,8 +243,8 @@ class MilkDatabase:
     def delete_entry(self, entry_id: int) -> bool:
         """Soft delete an entry by id. Returns True if a row was soft-deleted."""
         cur = self.conn.execute(
-            "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ? AND consumed_at IS NULL",
-            (entry_id,)
+            "UPDATE transactions SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL",
+            (now_madrid(), entry_id)
         )
         self.conn.commit()
         return cur.rowcount > 0
@@ -243,7 +261,7 @@ class MilkDatabase:
 
         1. Fetch ENTRADA entries WHERE consumed_at IS NULL ORDER BY add_at ASC, id ASC
         2. Verify sum of available ENTRADAs >= cantidad (raise ValueError if insufficient)
-        3. Mark ENTRADA entries with consumed_at = datetime('now') in FIFO order until cumulative >= cantidad
+        3. Mark ENTRADA entries with consumed_at = now_madrid() in FIFO order until cumulative >= cantidad
         4. Create a new SALIDA entry recording the consumption
         5. Return the new SALIDA entry_id
 
@@ -277,17 +295,18 @@ class MilkDatabase:
             entry_id = row[0]
             entry_cantidad = row[1]
             self.conn.execute(
-                "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
-                (entry_id,)
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id)
             )
             cumulative += entry_cantidad
             if cumulative >= cantidad:
                 break
 
+        now_str = now_madrid()
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, consumed_at)
-               VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%S', 'now'))""",
-            ("SALIDA", cantidad, add_at, user_id, username, notas),
+            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, consumed_at, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            ("SALIDA", cantidad, add_at, user_id, username, notas, now_str, now_str),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -348,6 +367,20 @@ class MilkDatabase:
         row = cur.fetchone()
         total_entradas = row["total_entradas"]
         total_salidas = row["total_salidas"]
+
+        # Reversal SALIDAs (ENTRADA→SALIDA on same day) represent both
+        # an extraction and a consumption. Add their amount as phantom ENTRADA.
+        cur = self.conn.execute(
+            """SELECT COALESCE(SUM(cantidad), 0)
+               FROM transactions
+               WHERE tipo = 'SALIDA'
+                 AND consumed_at >= ? AND consumed_at < ?
+                 AND add_at >= ? AND add_at < ?""",
+            (start, end, start, end),
+        )
+        phantom = cur.fetchone()[0]
+        total_entradas += phantom
+
         return {
             "total_entradas": total_entradas,
             "total_salidas": total_salidas,

@@ -592,10 +592,11 @@ class TestEditarModifyTipo:
 
         update.callback_query.answer.assert_called_once()
         mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
-        # Verify consumed_at was set
+        # Verify consumed_at was set (now using now_madrid() as bound parameter)
         mock_db.conn.execute.assert_called_once()
         call_args = mock_db.conn.execute.call_args
-        assert "consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now')" in call_args[0][0]
+        assert "consumed_at = ?" in call_args[0][0]
+        assert call_args[0][1][1] == 1  # second param is entry_id
         mock_db.conn.commit.assert_called_once()
         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
         assert result == -1  # ConversationHandler.END

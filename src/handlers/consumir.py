@@ -9,6 +9,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler
 
 from src.auth import authorized_only
+from src.db import now_madrid
 from src.messages import (
     MSG_CONSUMED,
     MSG_CANCELLED,
@@ -175,8 +176,8 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         if success:
             # Also set consumed_at to now() for the entry
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
-                (entry_id,)
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id)
             )
             db.conn.commit()
 
