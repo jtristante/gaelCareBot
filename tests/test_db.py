@@ -439,9 +439,8 @@ class TestFIFOConsumption:
         assert rows[id2] is not None, "id2 should be consumed"
         assert rows[id3] is None, "id3 should NOT be consumed (over-marking is OK)"
 
-        # Stock = all ENTRADAs - SALIDA = (100+200+150) - 250 = 200
-        # Even though id1 and id2 are marked consumed, they still count toward stock
-        assert db.get_total_stock() == 200
+        # Stock = unconsumed ENTRADA (id3=150) - no unpaired SALIDA = 150
+        assert db.get_total_stock() == 150
 
     def test_consume_fifo_creates_salida_entry(self, db: MilkDatabase) -> None:
         """consume_fifo creates a SALIDA entry with exact amount (not marked as consumed)."""
@@ -526,13 +525,13 @@ class TestGetAllEntriesIncludeConsumed:
 
 
 class TestStockFormula:
-    """Test suite for the stock formula: SUM(all ENTRADAs) - SUM(all SALIDAs)."""
+    """Test suite for the stock formula: sum of unconsumed ENTRADAs."""
 
     def test_get_total_stock_formula(self, db: MilkDatabase) -> None:
-        """Stock = SUM(all ENTRADAs) - SUM(all SALIDAs), never negative."""
+        """Stock = SUM(ENTRADA WHERE consumed_at IS NULL)."""
         db.add_entry('ENTRADA', 300, '2026-05-19T10:00:00', 123)
         db.add_entry('SALIDA', 100, '2026-05-19T11:00:00', 123)
-        assert db.get_total_stock() == 200
+        assert db.get_total_stock() == 300
 
     def test_get_total_stock_never_negative(self, db: MilkDatabase) -> None:
         """Stock never goes below 0."""

@@ -184,7 +184,7 @@ class MilkDatabase:
 
         cur = self.conn.execute(
             """SELECT * FROM transactions
-               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ? AND consumed_at IS NULL)
+               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ?)
                   OR (tipo = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
                   OR (tipo = 'SALIDA' AND consumed_at IS NULL AND add_at >= ? AND add_at < ?)
                ORDER BY add_at DESC""",
@@ -330,7 +330,7 @@ class MilkDatabase:
                    COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) AS total_entradas,
                    COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0) AS total_salidas
                FROM transactions
-               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ? AND consumed_at IS NULL)
+               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ?)
                   OR (tipo = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
                   OR (tipo = 'SALIDA' AND consumed_at IS NULL AND add_at >= ? AND add_at < ?)""",
             (start, end, start, end, start, end),
