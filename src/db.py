@@ -10,7 +10,7 @@ MADRID_TZ = timezone(timedelta(hours=2))  # CEST (UTC+2, May 2026)
 # during the May–October window. Production should use zoneinfo or pytz.
 
 _VALID_COLUMNS = frozenset(
-    {"tipo", "cantidad", "fecha_hora", "user_id", "username", "notas"}
+    {"tipo", "cantidad", "add_at", "user_id", "username", "notas"}
 )
 
 _VALID_TIPOS = frozenset({"ENTRADA", "SALIDA"})
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tipo TEXT NOT NULL CHECK(tipo IN ('ENTRADA', 'SALIDA')),
     cantidad INTEGER NOT NULL CHECK(cantidad > 0),
-    fecha_hora TEXT NOT NULL,
+    add_at TEXT NOT NULL,
     user_id INTEGER NOT NULL,
     username TEXT,
     notas TEXT,
@@ -89,6 +89,13 @@ class MilkDatabase:
             "UPDATE transactions SET consumed_at = COALESCE(consumed_at, created_at) WHERE tipo = 'SALIDA'"
         )
         self.conn.commit()
+        try:
+            self.conn.execute(
+                "ALTER TABLE transactions RENAME COLUMN fecha_hora TO add_at"
+            )
+            self.conn.commit()
+        except sqlite3.OperationalError:
+            pass
 
     @staticmethod
     def _validate_tipo(tipo: str) -> None:
@@ -105,7 +112,7 @@ class MilkDatabase:
         self,
         tipo: str,
         cantidad: int,
-        fecha_hora: str,
+        add_at: str,
         user_id: int,
         username: Optional[str] = None,
         notas: Optional[str] = None,
@@ -116,9 +123,9 @@ class MilkDatabase:
             raise ValueError("notas cannot exceed 200 characters")
 
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, fecha_hora, user_id, username, notas)
+            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas)
                VALUES (?, ?, ?, ?, ?, ?)""",
-            (tipo, cantidad, fecha_hora, user_id, username, notas),
+            (tipo, cantidad, add_at, user_id, username, notas),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -132,7 +139,7 @@ class MilkDatabase:
         return dict_from_row(row)
 
     def get_all_entries(
-        self, order_by: str = "fecha_hora DESC", include_consumed: bool = False
+        self, order_by: str = "add_at DESC", include_consumed: bool = False
     ) -> list[dict[str, Any]]:
         """Return all entries ordered by *order_by* (sanitised).
 
@@ -144,7 +151,7 @@ class MilkDatabase:
         if len(parts) not in (1, 2):
             raise ValueError(f"Invalid order_by: {order_by!r}")
         col = parts[0]
-        allowed_cols = {"id", "tipo", "cantidad", "fecha_hora", "created_at"}
+        allowed_cols = {"id", "tipo", "cantidad", "add_at", "created_at"}
         if col not in allowed_cols:
             raise ValueError(f"Invalid sort column: {col!r}")
         direction = parts[1].upper() if len(parts) == 2 else "DESC"
@@ -166,6 +173,8 @@ class MilkDatabase:
         """Return all entries matching an ISO date prefix (YYYY-MM-DD).
 
         Uses a half-open interval: [date 00:00:00, next_date 00:00:00).
+        ENTRADA entries are filtered by add_at (extraction date).
+        SALIDA entries are filtered by consumed_at (consumption date).
         """
         start = f"{date}T00:00:00"
         # Compute next day
@@ -174,8 +183,12 @@ class MilkDatabase:
         end = next_dt.strftime("%Y-%m-%dT00:00:00")
 
         cur = self.conn.execute(
-            "SELECT * FROM transactions WHERE fecha_hora >= ? AND fecha_hora < ? AND consumed_at IS NULL ORDER BY fecha_hora DESC",
-            (start, end),
+            """SELECT * FROM transactions
+               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ? AND consumed_at IS NULL)
+                  OR (tipo = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
+                  OR (tipo = 'SALIDA' AND consumed_at IS NULL AND add_at >= ? AND add_at < ?)
+               ORDER BY add_at DESC""",
+            (start, end, start, end, start, end),
         )
         return [dict_from_row(row) for row in cur.fetchall()]
 
@@ -215,14 +228,14 @@ class MilkDatabase:
     def consume_fifo(
         self,
         cantidad: int,
-        fecha_hora: str,
+        add_at: str,
         user_id: int,
         username: Optional[str] = None,
         notas: Optional[str] = None,
     ) -> int:
         """Consume stock using FIFO strategy.
 
-        1. Fetch ENTRADA entries WHERE consumed_at IS NULL ORDER BY fecha_hora ASC, id ASC
+        1. Fetch ENTRADA entries WHERE consumed_at IS NULL ORDER BY add_at ASC, id ASC
         2. Verify sum of available ENTRADAs >= cantidad (raise ValueError if insufficient)
         3. Mark ENTRADA entries with consumed_at = datetime('now') in FIFO order until cumulative >= cantidad
         4. Create a new SALIDA entry recording the consumption
@@ -230,7 +243,7 @@ class MilkDatabase:
 
         Args:
             cantidad: Amount to consume (must be > 0)
-            fecha_hora: ISO format datetime for the SALIDA entry
+            add_at: ISO format datetime for the SALIDA entry
             user_id: User consuming the stock
             username: Optional username
             notas: Optional notes
@@ -245,7 +258,7 @@ class MilkDatabase:
             raise ValueError("cantidad must be positive")
 
         cur = self.conn.execute(
-            "SELECT id, cantidad FROM transactions WHERE tipo = 'ENTRADA' AND consumed_at IS NULL ORDER BY fecha_hora ASC, id ASC"
+            "SELECT id, cantidad FROM transactions WHERE tipo = 'ENTRADA' AND consumed_at IS NULL ORDER BY add_at ASC, id ASC"
         )
         entradas = cur.fetchall()
 
@@ -266,9 +279,9 @@ class MilkDatabase:
                 break
 
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, fecha_hora, user_id, username, notas, consumed_at)
+            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, consumed_at)
                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
-            ("SALIDA", cantidad, fecha_hora, user_id, username, notas),
+            ("SALIDA", cantidad, add_at, user_id, username, notas),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -302,6 +315,9 @@ class MilkDatabase:
     def get_daily_summary(self, date: str) -> dict[str, int]:
         """Return aggregate for a single day.
 
+        ENTRADA entries are filtered by add_at (extraction date).
+        SALIDA entries are filtered by consumed_at (consumption date).
+
         Returns *{"total_entradas": int, "total_salidas": int, "balance": int}*.
         """
         start = f"{date}T00:00:00"
@@ -314,8 +330,10 @@ class MilkDatabase:
                    COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) AS total_entradas,
                    COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0) AS total_salidas
                FROM transactions
-               WHERE fecha_hora >= ? AND fecha_hora < ? AND consumed_at IS NULL""",
-            (start, end),
+               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ? AND consumed_at IS NULL)
+                  OR (tipo = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
+                  OR (tipo = 'SALIDA' AND consumed_at IS NULL AND add_at >= ? AND add_at < ?)""",
+            (start, end, start, end, start, end),
         )
         row = cur.fetchone()
         total_entradas = row["total_entradas"]

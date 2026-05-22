@@ -27,7 +27,7 @@ class TestMilkDatabase:
         assert stored is not None
         assert stored["tipo"] == sample_entry["tipo"]
         assert stored["cantidad"] == sample_entry["cantidad"]
-        assert stored["fecha_hora"] == sample_entry["fecha_hora"]
+        assert stored["add_at"] == sample_entry["add_at"]
         assert stored["user_id"] == sample_entry["user_id"]
         assert stored["username"] == sample_entry["username"]
         assert stored["notas"] == sample_entry["notas"]
@@ -454,7 +454,7 @@ class TestFIFOConsumption:
         assert row is not None
         assert row["tipo"] == "SALIDA"
         assert row["cantidad"] == 100
-        assert row["fecha_hora"] == "2026-05-22T12:00:00"
+        assert row["add_at"] == "2026-05-22T12:00:00"
         assert row["user_id"] == 123
         assert row["username"] == "test"
         assert row["notas"] == "notas_test"
@@ -478,7 +478,7 @@ class TestFIFOConsumption:
             db.consume_fifo(1, '2026-05-22T12:00:00', 123, 'test')
 
     def test_consume_fifo_with_tie_breaker_id(self, db: MilkDatabase) -> None:
-        """When fecha_hora is equal, use id ASC as tie-breaker."""
+        """When add_at is equal, use id ASC as tie-breaker."""
         id1 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)
         id2 = db.add_entry('ENTRADA', 100, '2026-05-22T10:00:00', 123)  # same timestamp
         
@@ -548,3 +548,61 @@ class TestStockFormula:
         # ENTRADA marked consumed + SALIDA 100 created
         # Stock = 200 (marked ENTRADA still counts) - 100 (SALIDA) = 100
         assert db.get_total_stock() == 100
+
+
+class TestDualDateSummary:
+    """RED tests: demonstrate that get_entries_by_date() and get_daily_summary()
+    fail to include SALIDA entries whose add_at differs from consumed_at.
+
+    These tests MUST FAIL on the current code because both methods use:
+        WHERE add_at >= ? AND add_at < ? AND consumed_at IS NULL
+
+    The entry is added as ENTRADA yesterday (2026-05-21), then tipo is
+    changed to SALIDA and consumed_at is set to today (2026-05-22).
+    The queries for today should find this SALIDA entry, but the
+    add_at-based filter (plus consumed_at IS NULL) excludes it.
+    """
+
+    def test_daily_summary_includes_consumed_entries(
+        self, db: MilkDatabase
+    ) -> None:
+        """SALIDA entries consumed today appear in today's summary despite add_at being yesterday.
+
+        Must FAIL (RED) because get_daily_summary filters by add_at
+        and requires consumed_at IS NULL.
+        """
+        entry_id = db.add_entry(
+            "ENTRADA", 150, "2026-05-21T10:00:00", 123, "test_user"
+        )
+        db.update_entry(entry_id, tipo="SALIDA")
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            ("2026-05-22T12:00:00", entry_id),
+        )
+        db.conn.commit()
+
+        summary = db.get_daily_summary("2026-05-22")
+        assert summary["total_salidas"] == 150
+
+    def test_get_entries_by_date_includes_consumed(
+        self, db: MilkDatabase
+    ) -> None:
+        """SALIDA entries consumed today appear in get_entries_by_date despite add_at being yesterday.
+
+        Must FAIL (RED) because get_entries_by_date filters by add_at
+        and requires consumed_at IS NULL.
+        """
+        entry_id = db.add_entry(
+            "ENTRADA", 150, "2026-05-21T10:00:00", 123, "test_user"
+        )
+        db.update_entry(entry_id, tipo="SALIDA")
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            ("2026-05-22T12:00:00", entry_id),
+        )
+        db.conn.commit()
+
+        entries = db.get_entries_by_date("2026-05-22")
+        assert len(entries) == 1
+        assert entries[0]["tipo"] == "SALIDA"
+        assert entries[0]["cantidad"] == 150
