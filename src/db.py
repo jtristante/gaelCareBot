@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     user_id INTEGER NOT NULL,
     username TEXT,
     notas TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT DEFAULT NULL
 )
 """
 
@@ -61,11 +62,22 @@ class MilkDatabase:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self._create_tables()
+        self._migrate_schema()
 
     def _create_tables(self) -> None:
         """Create the transactions table if it does not exist."""
         self.conn.execute(_TABLE_SQL)
         self.conn.commit()
+
+    def _migrate_schema(self) -> None:
+        """Add the deleted_at column if it does not already exist (idempotent)."""
+        try:
+            self.conn.execute(
+                "ALTER TABLE transactions ADD COLUMN deleted_at TEXT DEFAULT NULL"
+            )
+            self.conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists — migration is idempotent
 
     @staticmethod
     def _validate_tipo(tipo: str) -> None:
