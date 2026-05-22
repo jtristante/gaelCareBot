@@ -395,5 +395,4 @@ consumir_conv_handler = ConversationHandler(
         CONFIRMING: [CallbackQueryHandler(confirm_reversal, pattern="^(confirm|cancel)")],
     },
     fallbacks=[CommandHandler("cancel", cancel)],
-    per_message=True,
 )
