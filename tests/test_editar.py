@@ -219,7 +219,7 @@ class TestEditarSelectEntry:
         result = await entry_selected(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        mock_db.get_entry.assert_called_once_with(1)
+        mock_db.get_entry.assert_called_once_with(1, include_consumed=True)
         assert ctx.user_data["edit_entry_id"] == 1
         update.callback_query.edit_message_text.assert_called_once()
         call_args = update.callback_query.edit_message_text.call_args

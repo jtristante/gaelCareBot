@@ -108,8 +108,8 @@ async def entry_selected(update: Update, context: Any) -> int:
         await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
         return ConversationHandler.END
 
-    # Verify entry exists
-    entry = db.get_entry(entry_id)
+    # Verify entry exists (editing shows all entries, including consumed)
+    entry = db.get_entry(entry_id, include_consumed=True)
     if entry is None:
         await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
         return ConversationHandler.END

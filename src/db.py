@@ -130,11 +130,17 @@ class MilkDatabase:
         self.conn.commit()
         return cur.lastrowid
 
-    def get_entry(self, entry_id: int) -> Optional[dict[str, Any]]:
-        """Return a single entry by id, or None if not found or soft-deleted."""
-        cur = self.conn.execute(
-            "SELECT * FROM transactions WHERE id = ? AND consumed_at IS NULL", (entry_id,)
-        )
+    def get_entry(self, entry_id: int, include_consumed: bool = False) -> Optional[dict[str, Any]]:
+        """Return a single entry by id, or None if not found.
+
+        Args:
+            entry_id: The entry ID to look up.
+            include_consumed: If True, return the entry even if consumed_at is set.
+        """
+        sql = "SELECT * FROM transactions WHERE id = ?"
+        if not include_consumed:
+            sql += " AND consumed_at IS NULL"
+        cur = self.conn.execute(sql, (entry_id,))
         row = cur.fetchone()
         return dict_from_row(row)
 
