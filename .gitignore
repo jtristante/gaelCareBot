@@ -21,5 +21,8 @@ data/*.db-wal
 .DS_Store
 Thumbs.db
 
+# DevOps notes (personal, not for repo)
+devops-notes.md
+
 # Sisyphus (internal)
 .sisyphus/
