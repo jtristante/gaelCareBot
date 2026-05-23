@@ -38,5 +38,5 @@ class TestHelpMsgNoMarkdown:
         assert "</code>" in HELP_MSG
 
     def test_angle_brackets_escaped(self):
-        """Angle brackets inside <code> tags should be HTML-escaped."""
-        assert "&lt;cantidad&gt;" in HELP_MSG
+        """Parameter notation uses square brackets inside <code> tags (no HTML entities needed)."""
+        assert "[cantidad]" in HELP_MSG

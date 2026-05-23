@@ -18,7 +18,7 @@ HELP_MSG = (
     "📋 <b>Comandos disponibles:</b>\n\n"
     "/start — Mensaje de bienvenida e instrucciones\n"
     "/help — Mostrar esta ayuda\n"
-    "/agregar <code>&lt;cantidad&gt;</code> <code>[notas]</code> — Registrar leche extraída hoy\n"
+    "/agregar <code>[cantidad]</code> <code>[notas]</code> — Registrar leche extraída. Sin argumentos abre menú interactivo\n"
     "/consumir — Registrar leche consumida (seleccionar de la lista)\n"
     "/stock — Ver historial completo\n"
     "/total — Ver stock total disponible\n"
@@ -94,6 +94,9 @@ MSG_SELECT_FIELD = "Selecciona el campo a editar:"
 
 # Prompt to enter a new value for a specific field.
 MSG_ENTER_NEW_VALUE = "Introduce el nuevo valor para '{campo}':"
+
+# Prompt for amount when /agregar is used without arguments (interactive mode).
+MSG_PROMPT_AMOUNT = "¿Cuántos ml quieres añadir?"
 
 # Confirmation prompt before applying edits.
 MSG_CONFIRM_EDIT = "¿Confirmar cambios?\n\n{entry_info}"
