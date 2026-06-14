@@ -30,5 +30,8 @@ dev = [
     "pytest-asyncio",
 ]
 
+[tool.setuptools.packages.find]
+include = ["gaelcarebot*"]
+
 [tool.setuptools.dynamic]
 version = {attr = "gaelcarebot.__version__"}

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from telegram.ext import ConversationHandler
 
-from src import auth
+from gaelcarebot import auth
 from gaelcarebot.config import load_config
 from gaelcarebot.handlers.consumir import (
     consumir_command,
@@ -444,7 +444,7 @@ class TestReversalFlowInteractions:
             "username": "test_user"
         }
 
-        with patch("src.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+        with patch("gaelcarebot.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
             result = await confirm_reversal(update, ctx)
 
             # Verify notification was sent
@@ -475,7 +475,7 @@ class TestReversalFlowInteractions:
             "username": "test_user"
         }
 
-        with patch("src.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+        with patch("gaelcarebot.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
             mock_notify.side_effect = Exception("API error")
 
             result = await confirm_reversal(update, ctx)
@@ -540,7 +540,7 @@ class TestReversalFlowInteractions:
         The fix must move get_entry() BEFORE the mutation.
         """
         # Disable send_daily_summary to avoid import issues
-        monkeypatch.setattr("src.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
+        monkeypatch.setattr("gaelcarebot.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
 
         # Add an ENTRADA entry to the real in-memory database
         entry_id = db.add_entry(
@@ -585,7 +585,7 @@ class TestReversalFlowInteractions:
         It queries the database directly via SQL.
         """
         # Disable send_daily_summary to avoid import issues
-        monkeypatch.setattr("src.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
+        monkeypatch.setattr("gaelcarebot.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
 
         # Add an ENTRADA entry to the real in-memory database
         entry_id = db.add_entry(

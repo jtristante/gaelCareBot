@@ -367,7 +367,7 @@ class TestAgregarInteractiveFlow:
         update = setup_callback_update(user_id=123, data="confirm")
         ctx = setup_context(user_data={"add_cantidad": 150})
 
-        with patch("src.handlers.agregar.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+        with patch("gaelcarebot.handlers.agregar.send_daily_summary", new_callable=AsyncMock) as mock_notify:
             result = await confirm_add(update, ctx)
 
             mock_notify.assert_called_once()
