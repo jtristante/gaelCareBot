@@ -85,7 +85,7 @@ python -m gaelcarebot.bot
 ## Comandos del bot
 
 | Comando | Descripción |
-|---|---|---|
+|---|---|
 | `/start` | Mensaje de bienvenida e instrucciones |
 | `/help` | Mostrar esta ayuda |
 | `/agregar [cantidad] [notas]` | Registrar una extracción de leche (ml). Sin argumentos abre menú interactivo |
