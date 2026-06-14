@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -21,7 +20,6 @@ from gaelcarebot.handlers.consumir import (
 from gaelcarebot.messages import (
     MSG_CONSUMED,
     MSG_CANCELLED,
-    MSG_SELECT_ENTRY,
     ERROR_UNAUTHORIZED,
     ERROR_NO_ENTRIES,
     ERROR_ENTRY_NOT_FOUND,

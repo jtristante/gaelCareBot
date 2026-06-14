@@ -1,4 +1,4 @@
-"""Tests for src/messages.py — no Markdown syntax in user-facing strings."""
+"""Tests for gaelcarebot/messages.py — no Markdown syntax in user-facing strings."""
 
 from __future__ import annotations
 

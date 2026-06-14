@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, Mock
-
 import pytest
 
 from gaelcarebot.auth import init_auth

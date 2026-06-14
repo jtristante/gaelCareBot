@@ -16,7 +16,6 @@ from gaelcarebot.handlers.agregar import (
     CONFIRMING,
 )
 from gaelcarebot.messages import (
-    MSG_ADDED,
     MSG_CANCELLED,
     MSG_PROMPT_AMOUNT,
     ERROR_INVALID_AMOUNT,
