@@ -85,12 +85,33 @@ python -m gaelcarebot.bot
 ## Comandos del bot
 
 | Comando | Descripción |
-|---|---|
+|---|---|---|
 | `/start` | Mensaje de bienvenida e instrucciones |
-| `/agregar <cantidad>` | Registrar una extracción de leche (en ml) |
+| `/help` | Mostrar esta ayuda |
+| `/agregar [cantidad] [notas]` | Registrar una extracción de leche (ml). Sin argumentos abre menú interactivo |
 | `/consumir` | Registrar un consumo de leche (seleccionar de la lista) |
-| `/stock` | Consultar el stock actual disponible |
-| `/total` | Ver el total acumulado de extracciones y consumos |
+| `/stock` | Ver historial completo de extracciones |
+| `/total` | Ver stock total disponible |
+| `/editar` | Editar una entrada existente (cantidad, fecha, notas o tipo) |
+
+## Notificaciones al grupo
+
+Si se configura `GROUP_CHAT_ID`, el bot envía automáticamente un resumen del día al grupo de Telegram después de cada operación que modifique el stock:
+
+| Acción | ¿Notifica? | Detalle |
+|---|---|---|
+| `/agregar` (extracción) | ✅ Sí | Envía resumen del día actual al grupo |
+| `/consumir` (consumo) | ✅ Sí | Envía resumen del día actual al grupo |
+| `/editar` (modificar entrada) | ❌ No | No envía notificación |
+
+El resumen incluye todas las entradas del día actual con el formato:
+
+```
+📋 Resumen del día DD/MM/AAAA:
+  +XXX ml (extracción) - usuario
+  -YYY ml (consumo) - usuario
+  Balance: ZZZ ml
+```
 
 ## Estructura del proyecto
 
