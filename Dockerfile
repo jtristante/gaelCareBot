@@ -1,9 +1,3 @@
-FROM python:3.11-slim AS builder
-
-# Create non-root user
-RUN useradd --create-home appuser
-
-# ---- Production stage ----
 FROM python:3.11-slim
 
 # Create non-root user
