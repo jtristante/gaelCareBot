@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from src.auth import init_auth
-from src.handlers.stock import stock_command
-from src.messages import ERROR_NO_ENTRIES
+from gaelcarebot.auth import init_auth
+from gaelcarebot.handlers.stock import stock_command
+from gaelcarebot.messages import ERROR_NO_ENTRIES
 
 pytestmark = pytest.mark.asyncio
 

@@ -9,8 +9,8 @@ import pytest
 from telegram.ext import ConversationHandler
 
 from src import auth
-from src.config import load_config
-from src.handlers.consumir import (
+from gaelcarebot.config import load_config
+from gaelcarebot.handlers.consumir import (
     consumir_command,
     entry_selected,
     confirm_reversal,
@@ -18,7 +18,7 @@ from src.handlers.consumir import (
     SELECTING_ENTRY,
     CONFIRMING,
 )
-from src.messages import (
+from gaelcarebot.messages import (
     MSG_CONSUMED,
     MSG_CANCELLED,
     MSG_SELECT_ENTRY,

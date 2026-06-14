@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.db import MilkDatabase
+from gaelcarebot.db import MilkDatabase
 
 
 class TestMilkDatabase:

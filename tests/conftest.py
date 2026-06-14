@@ -11,8 +11,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from src.config import Config, load_config
-from src.db import MilkDatabase
+from gaelcarebot.config import Config, load_config
+from gaelcarebot.db import MilkDatabase
 
 
 @pytest.fixture

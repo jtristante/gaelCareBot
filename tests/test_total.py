@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from src.auth import init_auth
-from src.handlers.total import total_command
-from src.messages import MSG_STOCK_TOTAL, MSG_STOCK_TOTAL_ZERO
+from gaelcarebot.auth import init_auth
+from gaelcarebot.handlers.total import total_command
+from gaelcarebot.messages import MSG_STOCK_TOTAL, MSG_STOCK_TOTAL_ZERO
 
 
 @pytest.fixture

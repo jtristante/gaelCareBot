@@ -1,15 +1,9 @@
 """Seed script — resets the database and populates with 17 ENTRADA records (870 ml total)."""
 
 import os
-import sys
 from datetime import datetime
 
-# Ensure the project root is on sys.path so `from src.db import MilkDatabase` works
-_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
-
-from src.db import MilkDatabase
+from gaelcarebot.db import MilkDatabase
 
 
 def parse_date(dd_mm_yyyy: str) -> str:

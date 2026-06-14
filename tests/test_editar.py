@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from src.handlers.editar import (
+from gaelcarebot.handlers.editar import (
     SELECTING_ENTRY,
     EDITING_FIELD,
     EDITING_VALUE,
@@ -22,7 +22,7 @@ from src.handlers.editar import (
     _validate_cantidad,
     _validate_fecha,
 )
-from src.messages import (
+from gaelcarebot.messages import (
     ERROR_NO_ENTRIES,
     ERROR_ENTRY_NOT_FOUND,
     ERROR_INVALID_AMOUNT,
@@ -90,8 +90,8 @@ class TestEditarStart:
     @pytest.fixture(autouse=True)
     def setup_auth(self, patch_config):
         """Initialize auth with authorized user 123."""
-        from src.auth import init_auth
-        from src.config import load_config
+        from gaelcarebot.auth import init_auth
+        from gaelcarebot.config import load_config
         config = load_config()
         init_auth(config)
 

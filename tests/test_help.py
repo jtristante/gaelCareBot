@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from src.handlers.help import help_command
-from src.messages import HELP_MSG, ERROR_UNAUTHORIZED
-from src.auth import init_auth
+from gaelcarebot.handlers.help import help_command
+from gaelcarebot.messages import HELP_MSG, ERROR_UNAUTHORIZED
+from gaelcarebot.auth import init_auth
 
 
 pytestmark = pytest.mark.asyncio

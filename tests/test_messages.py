@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.messages import HELP_MSG, TABLE_HEADER
+from gaelcarebot.messages import HELP_MSG, TABLE_HEADER
 
 
 class TestTableHeaderNoMarkdown:

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from telegram.ext import ConversationHandler
 
-from src.handlers.agregar import (
+from gaelcarebot.handlers.agregar import (
     agregar_start,
     receive_amount,
     confirm_add,
@@ -15,14 +15,14 @@ from src.handlers.agregar import (
     WAITING_AMOUNT,
     CONFIRMING,
 )
-from src.messages import (
+from gaelcarebot.messages import (
     MSG_ADDED,
     MSG_CANCELLED,
     MSG_PROMPT_AMOUNT,
     ERROR_INVALID_AMOUNT,
     ERROR_UNAUTHORIZED,
 )
-from src.auth import init_auth
+from gaelcarebot.auth import init_auth
 
 
 pytestmark = pytest.mark.asyncio
@@ -139,7 +139,7 @@ class TestAgregarInlineMode:
 # Legacy tests for the old agregar_command (kept for compatibility)
 # These will be removed once the conversation handler is fully implemented
 
-from src.handlers.agregar import agregar_command
+from gaelcarebot.handlers.agregar import agregar_command
 
 
 async def test_agregar_valid(authorized_update, mock_context, db):
