@@ -11,8 +11,8 @@ from typing import Optional
 
 import pytz
 
-from src.config import Config
-from src.messages import (
+from gaelcarebot.config import Config
+from gaelcarebot.messages import (
     SUMMARY_BALANCE,
     SUMMARY_ENTRADAS,
     SUMMARY_HEADER,

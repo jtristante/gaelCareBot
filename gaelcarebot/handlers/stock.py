@@ -9,8 +9,8 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.auth import authorized_only
-from src.messages import ERROR_NO_ENTRIES, TABLE_HEADER
+from gaelcarebot.auth import authorized_only
+from gaelcarebot.messages import ERROR_NO_ENTRIES, TABLE_HEADER
 
 logger = logging.getLogger(__name__)
 

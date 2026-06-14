@@ -10,18 +10,18 @@ import logging
 
 from telegram.ext import Application, CommandHandler
 
-from src.auth import init_auth
-from src.config import load_config
-from src.db import MilkDatabase
-from src.group_notifier import init_notifier
-from src.handlers.agregar import agregar_conv_handler
-from src.handlers.consumir import consumir_conv_handler
-from src.handlers.editar import editar_conv_handler
-from src.handlers.error import error_handler
-from src.handlers.start import start_command
-from src.handlers.stock import stock_command
-from src.handlers.help import help_command
-from src.handlers.total import total_command
+from gaelcarebot.auth import init_auth
+from gaelcarebot.config import load_config
+from gaelcarebot.db import MilkDatabase
+from gaelcarebot.group_notifier import init_notifier
+from gaelcarebot.handlers.agregar import agregar_conv_handler
+from gaelcarebot.handlers.consumir import consumir_conv_handler
+from gaelcarebot.handlers.editar import editar_conv_handler
+from gaelcarebot.handlers.error import error_handler
+from gaelcarebot.handlers.start import start_command
+from gaelcarebot.handlers.stock import stock_command
+from gaelcarebot.handlers.help import help_command
+from gaelcarebot.handlers.total import total_command
 
 logger = logging.getLogger(__name__)
 

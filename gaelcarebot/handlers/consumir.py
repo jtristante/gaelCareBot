@@ -8,9 +8,9 @@ from typing import Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler
 
-from src.auth import authorized_only
-from src.db import now_madrid
-from src.messages import (
+from gaelcarebot.auth import authorized_only
+from gaelcarebot.db import now_madrid
+from gaelcarebot.messages import (
     MSG_CONSUMED,
     MSG_CANCELLED,
     MSG_SELECT_ENTRY,
@@ -29,7 +29,7 @@ CONFIRMING = 1
 
 # Try to import send_daily_summary - it may not exist yet (Task 12 in progress)
 try:
-    from src.group_notifier import send_daily_summary
+    from gaelcarebot.group_notifier import send_daily_summary
     _SEND_DAILY_SUMMARY_AVAILABLE = True
 except ImportError:
     _SEND_DAILY_SUMMARY_AVAILABLE = False

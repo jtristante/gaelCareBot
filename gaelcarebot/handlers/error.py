@@ -7,7 +7,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.messages import ERROR_GENERIC
+from gaelcarebot.messages import ERROR_GENERIC
 
 logger = logging.getLogger(__name__)
 

@@ -17,14 +17,14 @@ from telegram.ext import (
 )
 from telegram.ext import ContextTypes
 
-from src.auth import authorized_only
-from src.messages import MSG_ADDED, MSG_CANCELLED, MSG_PROMPT_AMOUNT, ERROR_INVALID_AMOUNT, BTN_CONFIRM, BTN_CANCEL
+from gaelcarebot.auth import authorized_only
+from gaelcarebot.messages import MSG_ADDED, MSG_CANCELLED, MSG_PROMPT_AMOUNT, ERROR_INVALID_AMOUNT, BTN_CONFIRM, BTN_CANCEL
 
 logger = logging.getLogger(__name__)
 
 # Try to import send_daily_summary - it may not exist yet (Task 12 in progress)
 try:
-    from src.group_notifier import send_daily_summary
+    from gaelcarebot.group_notifier import send_daily_summary
     _SEND_DAILY_SUMMARY_AVAILABLE = True
 except ImportError:
     _SEND_DAILY_SUMMARY_AVAILABLE = False

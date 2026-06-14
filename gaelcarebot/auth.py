@@ -10,8 +10,8 @@ import logging
 from functools import wraps
 from typing import Callable, Coroutine, Any, Set
 
-from src.config import Config
-from src.messages import ERROR_UNAUTHORIZED
+from gaelcarebot.config import Config
+from gaelcarebot.messages import ERROR_UNAUTHORIZED
 
 logger = logging.getLogger(__name__)
 

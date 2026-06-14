@@ -7,8 +7,8 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.auth import authorized_only
-from src.messages import HELP_MSG
+from gaelcarebot.auth import authorized_only
+from gaelcarebot.messages import HELP_MSG
 
 logger = logging.getLogger(__name__)
 

@@ -15,9 +15,9 @@ from telegram.ext import (
     filters,
 )
 
-from src.auth import authorized_only
-from src.db import now_madrid
-from src.messages import (
+from gaelcarebot.auth import authorized_only
+from gaelcarebot.db import now_madrid
+from gaelcarebot.messages import (
     ERROR_ENTRY_NOT_FOUND,
     ERROR_INVALID_AMOUNT,
     ERROR_INVALID_DATE,
