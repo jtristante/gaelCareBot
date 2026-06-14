@@ -72,11 +72,14 @@ python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 
-# Instalar dependencias
-pip install -r requirements.txt
+# Instalar el paquete
+pip install .
+
+# Para desarrollo con tests (recomendado)
+pip install -e ".[dev]"
 
 # Ejecutar el bot
-python -m src.bot
+python -m gaelcarebot.bot
 ```
 
 ## Comandos del bot
@@ -95,8 +98,8 @@ python -m src.bot
 ├── docker-compose.yml
 ├── Dockerfile
 ├── .env.example
-├── requirements.txt
-├── src/
+├── pyproject.toml
+├── gaelcarebot/
 │   ├── bot.py            # Punto de entrada principal
 │   ├── config.py         # Configuración desde variables de entorno
 │   ├── auth.py           # Autenticación de usuarios

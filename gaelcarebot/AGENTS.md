@@ -1,20 +1,20 @@
-# src/ — Application Core
+# gaelcarebot/ — Application Core
 
 ## OVERVIEW
 
-Core application modules: entry point, configuration, database, auth, messaging, and group notifications. No packaging — flat `requirements.txt` with `python -m src.bot` entry.
+Core application modules: entry point, configuration, database, auth, messaging, and group notifications. Packaged via `pyproject.toml` (PEP 621) — `python -m gaelcarebot.bot` entry.
 
 ## STRUCTURE
 
 ```
-src/
+gaelcarebot/
 ├── bot.py            # main(): bootstrap → polling loop
 ├── config.py         # Config dataclass, load_config()
 ├── db.py             # MilkDatabase — SQLite CRUD + auto-migration
 ├── auth.py           # @authorized_only decorator
 ├── messages.py       # All user-facing Spanish strings
 ├── group_notifier.py # Daily summary push to Telegram group
-└── handlers/         # See src/handlers/AGENTS.md
+└── handlers/         # See gaelcarebot/handlers/AGENTS.md
 ```
 
 ## WHERE TO LOOK
@@ -42,5 +42,4 @@ src/
 ## ANTI-PATTERNS
 
 - **Do NOT hardcode timezone offsets.** See `db.py:8` — known bug. Use `pytz`.
-- **Do NOT add `pyproject.toml`** — project convention is flat `requirements.txt`.
 - **Do NOT create custom exceptions.** Use `ValueError` + descriptive message.
