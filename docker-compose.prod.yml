@@ -1,0 +1,16 @@
+# Production override for docker-compose.yml. Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  gaelcarebot:
+    image: ghcr.io/jtristante/gaelcarebot:latest
+    container_name: gaelcarebot
+    restart: unless-stopped
+    volumes:
+      - /opt/gaelcarebot/data:/data
+    env_file:
+      - .env
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

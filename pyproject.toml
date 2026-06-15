@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/your-org/gaelcarebot"
+Repository = "https://github.com/jtristante/gaelcarebot"
 
 [project.scripts]
 gaelcarebot = "gaelcarebot.bot:main"

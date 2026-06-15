@@ -1,0 +1,30 @@
+# Security: secrets and sensitive data
+.env
+.git/
+data/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Build artifacts
+dist/
+build/
+*.dist-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Project-specific
+devops-notes.md
+.sisyphus/
