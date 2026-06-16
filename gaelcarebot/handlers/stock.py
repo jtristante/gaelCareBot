@@ -47,7 +47,7 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         responsable = html.escape(entry["username"] or "\u2014")
 
         rows.append(
-            f"{cantidad_str:>8} | {fecha_str:^13} | {responsable:<16}"
+            f"{cantidad_str:>8} | {fecha_str:^13} | {responsable[:16]:<16}"
         )
 
     table_content = "\n".join(rows)
