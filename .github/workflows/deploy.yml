@@ -1,7 +1,9 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [master]
 
 concurrency:
@@ -11,6 +13,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: self-hosted
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
