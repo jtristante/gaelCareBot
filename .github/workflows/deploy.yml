@@ -38,15 +38,15 @@ jobs:
         run: |
           echo "Waiting for container to become healthy..."
           for i in $(seq 1 12); do
-            status=$(docker compose ps --status healthy --format '{{.Name}}' 2>/dev/null || echo "")
-            if echo "$status" | grep -q "gaelcarebot"; then
+            health=$(docker inspect --format='{{.State.Health.Status}}' gaelcarebot 2>/dev/null || echo "not-found")
+            if [ "$health" = "healthy" ]; then
               echo "Container is healthy!"
               exit 0
             fi
-            echo "Attempt $i/12 — waiting 10s..."
+            echo "Attempt $i/12 (current: ${health}) — waiting 10s..."
             sleep 10
           done
-          echo "Healthcheck failed after 120s"
+          echo "Healthcheck failed after 120s — last status: ${health}"
           exit 1
 
       - name: Clean up old images
