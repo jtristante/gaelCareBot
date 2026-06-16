@@ -35,8 +35,8 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.message.reply_html(ERROR_NO_ENTRIES)
         return
 
-    header_row = f"{'Cantidad':>8} │ {'Fecha/Hora':^14} │ {'Usuario':<20}"
-    separator = f"{'─'*8}─┼─{'─'*14}─┼─{'─'*20}"
+    header_row = f"{'Cantidad':>8} | {'Fecha/Hora':^14} | {'Usuario':<20}"
+    separator = f"{'-'*8}-+-{'-'*14}-+-{'-'*20}"
 
     rows = []
     for entry in entries:
@@ -47,7 +47,7 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         responsable = html.escape(entry["username"] or "\u2014")
 
         rows.append(
-            f"{cantidad_str:>8} │ {fecha_str:^14} │ {responsable:<20}"
+            f"{cantidad_str:>8} | {fecha_str:^14} | {responsable:<20}"
         )
 
     table_content = "\n".join(rows)
