@@ -23,12 +23,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull latest images
+        working-directory: /opt/gaelcarebot
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
 
       - name: Restart services
+        working-directory: /opt/gaelcarebot
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
       - name: Wait for healthcheck
+        working-directory: /opt/gaelcarebot
         run: |
           echo "Waiting for container to become healthy..."
           for i in $(seq 1 12); do
@@ -44,4 +47,5 @@ jobs:
           exit 1
 
       - name: Clean up old images
+        working-directory: /opt/gaelcarebot
         run: docker image prune -f
