@@ -5,6 +5,10 @@ RUN useradd --create-home appuser
 
 WORKDIR /app
 
+# Install procps for pgrep (required by Docker HEALTHCHECK)
+RUN apt-get update && apt-get install -y --no-install-recommends procps \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies (cached layer - only rebuilds when pyproject.toml changes)
 COPY pyproject.toml .
 # Copy __init__.py so setuptools can resolve version attr before full code copy
