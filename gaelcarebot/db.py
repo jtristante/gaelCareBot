@@ -78,14 +78,14 @@ class MilkDatabase:
         """Migrate schema: rename deleted_at→consumed_at, add consumed_at if missing, migrate SALIDAs."""
         try:
             self.conn.execute(
-                "ALTER TABLE transactions RENAME COLUMN deleted_at TO consumed_at"
+                "ALTER TABLE milk_entries RENAME COLUMN deleted_at TO consumed_at"
             )
             self.conn.commit()
         except sqlite3.OperationalError:
             pass
         try:
             self.conn.execute(
-                "ALTER TABLE transactions ADD COLUMN consumed_at TEXT DEFAULT NULL"
+                "ALTER TABLE milk_entries ADD COLUMN consumed_at TEXT DEFAULT NULL"
             )
             self.conn.commit()
         except sqlite3.OperationalError:
@@ -96,7 +96,7 @@ class MilkDatabase:
         self.conn.commit()
         try:
             self.conn.execute(
-                "ALTER TABLE transactions RENAME COLUMN fecha_hora TO add_at"
+                "ALTER TABLE milk_entries RENAME COLUMN fecha_hora TO add_at"
             )
             self.conn.commit()
         except sqlite3.OperationalError:

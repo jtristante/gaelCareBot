@@ -1,10 +1,20 @@
 {
   "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/rename-milk-entries.md",
   "started_at": "2026-06-17T21:21:48.030Z",
-  "session_ids": ["ses_128a4e73dffeibOsgH3nsu7RAr"],
+  "session_ids": [
+    "ses_128a4e73dffeibOsgH3nsu7RAr",
+    "ses_1287ef2f2ffe64TXFvUFHrr1VC",
+    "ses_1287eeb17ffel2T2l5EPER0eri",
+    "ses_1287ed955ffetG1zgnfQ3sl1o9",
+    "ses_1287ecfa7ffePuc5JUQYoDW5MS"
+  ],
   "plan_name": "rename-milk-entries",
   "session_origins": {
-    "ses_128a4e73dffeibOsgH3nsu7RAr": "direct"
+    "ses_128a4e73dffeibOsgH3nsu7RAr": "direct",
+    "ses_1287ef2f2ffe64TXFvUFHrr1VC": "appended",
+    "ses_1287eeb17ffel2T2l5EPER0eri": "appended",
+    "ses_1287ed955ffetG1zgnfQ3sl1o9": "appended",
+    "ses_1287ecfa7ffePuc5JUQYoDW5MS": "appended"
   },
   "active_work_id": "rename-milk-entries",
   "works": {
@@ -14,15 +24,52 @@
       "plan_name": "rename-milk-entries",
       "status": "active",
       "started_at": "2026-06-17T21:21:48.030Z",
-      "session_ids": ["ses_128a4e73dffeibOsgH3nsu7RAr"],
+      "session_ids": [
+        "ses_128a4e73dffeibOsgH3nsu7RAr",
+        "ses_1287ef2f2ffe64TXFvUFHrr1VC",
+        "ses_1287eeb17ffel2T2l5EPER0eri",
+        "ses_1287ed955ffetG1zgnfQ3sl1o9",
+        "ses_1287ecfa7ffePuc5JUQYoDW5MS"
+      ],
       "session_origins": {
-        "ses_128a4e73dffeibOsgH3nsu7RAr": "direct"
+        "ses_128a4e73dffeibOsgH3nsu7RAr": "direct",
+        "ses_1287ef2f2ffe64TXFvUFHrr1VC": "appended",
+        "ses_1287eeb17ffel2T2l5EPER0eri": "appended",
+        "ses_1287ed955ffetG1zgnfQ3sl1o9": "appended",
+        "ses_1287ecfa7ffePuc5JUQYoDW5MS": "appended"
       },
       "worktree_path": null,
       "agent": "atlas",
-      "task_sessions": {}
+      "task_sessions": {
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "**Plan Compliance Audit** — `oracle`",
+          "session_id": "ses_1287ecfa7ffePuc5JUQYoDW5MS",
+          "agent": "oracle",
+          "started_at": "2026-06-17T21:35:57.224Z",
+          "status": "running",
+          "updated_at": "2026-06-17T21:35:57.828Z"
+        }
+      },
+      "updated_at": "2026-06-17T21:35:57.828Z"
     }
   },
   "schema_version": 2,
-  "updated_at": "2026-06-17T21:21:48.030Z"
+  "updated_at": "2026-06-17T21:35:57.828Z",
+  "task_sessions": {
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_1287ecfa7ffePuc5JUQYoDW5MS",
+      "agent": "oracle",
+      "started_at": "2026-06-17T21:35:57.224Z",
+      "status": "running",
+      "updated_at": "2026-06-17T21:35:57.828Z"
+    }
+  },
+  "status": "active",
+  "agent": "atlas",
+  "worktree_path": null
 }

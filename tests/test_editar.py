@@ -141,7 +141,7 @@ class TestEditarStart:
 
         result = await editar_start(update, ctx)
 
-        mock_db.get_all_entries.assert_called_once_with(order_by="add_at DESC", include_consumed=True)
+        mock_db.get_all_entries.assert_called_once_with(order_by="event_date DESC", include_consumed=True)
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == -1  # ConversationHandler.END
 
@@ -158,7 +158,7 @@ class TestEditarStart:
 
         result = await editar_start(update, ctx)
 
-        mock_db.get_all_entries.assert_called_once_with(order_by="add_at DESC", include_consumed=True)
+        mock_db.get_all_entries.assert_called_once_with(order_by="event_date DESC", include_consumed=True)
         update.message.reply_text.assert_called_once()
         call_args = update.message.reply_text.call_args
         assert call_args[0][0] == MSG_SELECT_ENTRY

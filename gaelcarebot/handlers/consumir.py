@@ -48,7 +48,7 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
     # Get all entries, then filter for ENTRADA only (not consumed)
-    all_entries = db.get_all_entries(order_by="add_at DESC", include_consumed=False)
+    all_entries = db.get_all_entries(order_by="event_date DESC", include_consumed=False)
     entrada_entries = [e for e in all_entries if e["entry_type"] == "ENTRADA"]
 
     if not entrada_entries:

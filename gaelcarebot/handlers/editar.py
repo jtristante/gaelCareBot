@@ -61,7 +61,7 @@ async def editar_start(update: Update, context: Any) -> int:
         return ConversationHandler.END
 
     # Get all entries (including consumed)
-    entries = db.get_all_entries(order_by="add_at DESC", include_consumed=True)
+    entries = db.get_all_entries(order_by="event_date DESC", include_consumed=True)
 
     if not entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
@@ -395,8 +395,8 @@ async def confirm_edit(update: Update, context: Any) -> int:
             if field_name == "fecha":
                 original_entry = context.user_data.get("edit_entry_original", {})
                 original_event_date = original_entry.get("event_date", "")
-                if original_add_at and "T" in original_add_at:
-                    original_time = original_add_at.split("T")[1]
+                if original_event_date and "T" in original_event_date:
+                    original_time = original_event_date.split("T")[1]
                     new_value = f"{new_value}T{original_time}"
                 else:
                     new_value = f"{new_value}T12:00:00"
