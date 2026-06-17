@@ -233,10 +233,21 @@ class MilkDatabase:
         set_clause = ", ".join(f"{col} = ?" for col in updates)
         values = list(updates.values()) + [entry_id]
 
-        cur = self.conn.execute(
-            f"UPDATE transactions SET {set_clause} WHERE id = ? AND consumed_at IS NULL",
-            values,
-        )
+        # Selective guard: restricted fields (affect stock/identity) require
+        # consumed_at IS NULL; safe fields (metadata only) are always allowed.
+        restricted_fields = {"tipo", "cantidad", "user_id", "username"}
+        has_restricted = any(field in updates for field in restricted_fields)
+
+        if has_restricted:
+            cur = self.conn.execute(
+                f"UPDATE transactions SET {set_clause} WHERE id = ? AND consumed_at IS NULL",
+                values,
+            )
+        else:
+            cur = self.conn.execute(
+                f"UPDATE transactions SET {set_clause} WHERE id = ?",
+                values,
+            )
         self.conn.commit()
         return cur.rowcount > 0
 
