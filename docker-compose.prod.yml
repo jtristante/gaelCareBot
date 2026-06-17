@@ -14,3 +14,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  sqlite-web:
+    image: ghcr.io/jtristante/gaelcarebot-sqlite-web:latest

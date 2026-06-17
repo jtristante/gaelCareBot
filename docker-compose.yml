@@ -9,7 +9,10 @@ services:
       - .env
 
   sqlite-web:
-    image: coleifer/sqlite-web:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.sqlite-web
+    image: gaelcarebot-sqlite-web:local
     container_name: gaelcarebot-sqlite-web
     restart: unless-stopped
     volumes:
