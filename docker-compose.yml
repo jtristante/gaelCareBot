@@ -23,7 +23,6 @@ services:
       - .env
     environment:
       - SQLITE_WEB_PASSWORD=${SQLITE_WEB_PASSWORD}
-    user: "1000:1000"
     depends_on:
       - gaelcarebot
     logging:

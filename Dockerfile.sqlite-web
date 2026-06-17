@@ -2,7 +2,12 @@ FROM python:3.11-slim
 
 RUN pip install --no-cache-dir sqlite-web==0.7.2
 
-RUN useradd --create-home --uid 1000 appuser && mkdir -p /data && chown appuser:appuser /data
+# Create non-root user (same approach as gaelcarebot Dockerfile)
+RUN useradd --create-home appuser
+
+# Create data directory for SQLite DB (must be writable by appuser)
+RUN mkdir -p /data && chown appuser:appuser /data
+
 USER appuser
 
 EXPOSE 8080
@@ -11,4 +16,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request as u; exit(0 if u.urlopen('http://localhost:8080/').status == 200 else 1)"
 
 ENTRYPOINT ["sqlite_web"]
-CMD ["-H", "0.0.0.0", "-p", "8080"]
+CMD ["-H", "0.0.0.0", "-p", "8080", "/data/milk.db", "-P", "-x"]
