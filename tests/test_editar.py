@@ -733,7 +733,7 @@ class TestEditTipoIntegration:
         db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
 
         db.conn.execute(
-            "UPDATE milk_entries SET consumed_at = ?, tipo = ? WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = ?, entry_type = ? WHERE id = ?",
             (now_madrid(), "SALIDA", 1),
         )
         db.conn.commit()

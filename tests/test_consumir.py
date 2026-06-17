@@ -343,7 +343,7 @@ class TestReversalFlowInteractions:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_CONSUMED.format(amount=100, fecha="19/05/2026")
+            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -450,7 +450,7 @@ class TestReversalFlowInteractions:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_CONSUMED.format(amount=100, fecha="19/05/2026")
+            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -484,7 +484,7 @@ class TestReversalFlowInteractions:
 
             # Verify success message still shown despite notification failure
             update.callback_query.edit_message_text.assert_called_once_with(
-                MSG_CONSUMED.format(amount=100, fecha="19/05/2026")
+                MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
             )
 
         # Verify returned ConversationHandler.END
@@ -570,7 +570,7 @@ class TestReversalFlowInteractions:
         call_args = update.callback_query.edit_message_text.call_args
         msg_text = call_args[0][0]
 
-        expected = MSG_CONSUMED.format(amount=150, fecha="19/05/2026")
+        expected = MSG_CONSUMED.format(cantidad=150, fecha="19/05/2026")
         assert msg_text == expected, f"Expected '{expected}', got: {msg_text}"
 
         assert result == ConversationHandler.END

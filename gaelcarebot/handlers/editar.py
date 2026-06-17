@@ -193,7 +193,7 @@ async def tipo_selected(update: Update, context: Any) -> int:
 
     # Parse tipo value from callback data (format: tipo_{ENTRADA|SALIDA})
     try:
-        tipo_value = callback_data.split("_", 1)[1]
+        tipo_value = callback_data.rsplit("_", 1)[1]
     except IndexError:
         await query.edit_message_text(MSG_CANCELLED)
         return ConversationHandler.END
