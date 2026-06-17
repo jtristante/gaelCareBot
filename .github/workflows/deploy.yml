@@ -32,9 +32,13 @@ jobs:
         working-directory: /opt/gaelcarebot
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml pull gaelcarebot
 
+      - name: Build sqlite-web
+        working-directory: /opt/gaelcarebot
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build sqlite-web
+
       - name: Restart services
         working-directory: /opt/gaelcarebot
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
       - name: Wait for healthcheck
         working-directory: /opt/gaelcarebot
