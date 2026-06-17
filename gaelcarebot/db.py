@@ -76,6 +76,62 @@ class MilkDatabase:
 
     def _migrate_schema(self) -> None:
         """Migrate schema: rename deleted_at→consumed_at, add consumed_at if missing, migrate SALIDAs."""
+        cur = self.conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
+        )
+        if cur.fetchone():
+            try:
+                self.conn.execute("DROP TABLE IF EXISTS milk_entries")
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                self.conn.execute("ALTER TABLE transactions RENAME TO milk_entries")
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                self.conn.execute(
+                    "ALTER TABLE milk_entries RENAME COLUMN tipo TO entry_type"
+                )
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                self.conn.execute(
+                    "ALTER TABLE milk_entries RENAME COLUMN cantidad TO amount"
+                )
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                self.conn.execute(
+                    "ALTER TABLE milk_entries RENAME COLUMN add_at TO event_date"
+                )
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                self.conn.execute(
+                    "ALTER TABLE milk_entries RENAME COLUMN fecha_hora TO event_date"
+                )
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                self.conn.execute(
+                    "ALTER TABLE milk_entries RENAME COLUMN notas TO notes"
+                )
+                self.conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
         try:
             self.conn.execute(
                 "ALTER TABLE milk_entries RENAME COLUMN deleted_at TO consumed_at"
