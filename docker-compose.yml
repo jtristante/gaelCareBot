@@ -36,4 +36,4 @@ services:
       timeout: 10s
       start_period: 15s
       retries: 3
-    command: sqlite_web -H 0.0.0.0 -p 8080 /data/milk.db -P -x
+
