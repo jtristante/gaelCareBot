@@ -30,7 +30,7 @@ jobs:
 
       - name: Pull latest images
         working-directory: /opt/gaelcarebot
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml pull gaelcarebot
 
       - name: Restart services
         working-directory: /opt/gaelcarebot
