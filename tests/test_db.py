@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from gaelcarebot.db import MilkDatabase
+from gaelcarebot.db import MilkDatabase, now_madrid
 
 
 class TestMilkDatabase:
@@ -606,3 +606,100 @@ class TestDualDateSummary:
         assert len(entries) == 1
         assert entries[0]["tipo"] == "SALIDA"
         assert entries[0]["cantidad"] == 150
+
+
+class TestUpdateEntryGuard:
+    """Tests for update_entry guard on consumed entries.
+
+    Tests 1-2: DESIRED behavior — notas/add_at edits SHOULD be allowed on
+    consumed entries. These FAIL (RED) because update_entry() currently
+    blocks ALL edits with ``WHERE consumed_at IS NULL``.
+
+    Tests 3-5: Blocked fields — cantidad/tipo/user_id must remain blocked
+    on consumed entries. These PASS (GREEN) already.
+    """
+
+    def test_update_entry_notas_on_consumed(self) -> None:
+        """notas can be updated on a consumed entry. (SHOULD PASS after fix, FAILS now.)"""
+        db = MilkDatabase(":memory:")
+        try:
+            entry_id = db.add_entry(
+                "ENTRADA", 100, "2026-05-19T10:00:00", 123
+            )
+            db.conn.execute(
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id),
+            )
+            db.conn.commit()
+            result = db.update_entry(entry_id, notas="nueva nota")
+            assert result is True
+        finally:
+            db.close()
+
+    def test_update_entry_add_at_on_consumed(self) -> None:
+        """add_at can be updated on a consumed entry. (SHOULD PASS after fix, FAILS now.)"""
+        db = MilkDatabase(":memory:")
+        try:
+            entry_id = db.add_entry(
+                "ENTRADA", 100, "2026-05-19T10:00:00", 123
+            )
+            db.conn.execute(
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id),
+            )
+            db.conn.commit()
+            result = db.update_entry(entry_id, add_at="2026-06-01T10:00:00")
+            assert result is True
+        finally:
+            db.close()
+
+    def test_update_entry_cantidad_on_consumed_blocked(self) -> None:
+        """cantidad cannot be updated on a consumed entry. (PASSES now.)"""
+        db = MilkDatabase(":memory:")
+        try:
+            entry_id = db.add_entry(
+                "ENTRADA", 100, "2026-05-19T10:00:00", 123
+            )
+            db.conn.execute(
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id),
+            )
+            db.conn.commit()
+            result = db.update_entry(entry_id, cantidad=999)
+            assert result is False
+        finally:
+            db.close()
+
+    def test_update_entry_tipo_on_consumed_blocked(self) -> None:
+        """tipo cannot be updated on a consumed entry. (PASSES now.)"""
+        db = MilkDatabase(":memory:")
+        try:
+            entry_id = db.add_entry(
+                "ENTRADA", 100, "2026-05-19T10:00:00", 123
+            )
+            db.conn.execute(
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id),
+            )
+            db.conn.commit()
+            result = db.update_entry(entry_id, tipo="SALIDA")
+            assert result is False
+        finally:
+            db.close()
+
+    def test_update_entry_user_id_on_consumed_blocked(self) -> None:
+        """user_id cannot be updated on a consumed entry. (PASSES now.)"""
+        db = MilkDatabase(":memory:")
+        try:
+            entry_id = db.add_entry(
+                "ENTRADA", 100, "2026-05-19T10:00:00", 123
+            )
+            db.conn.execute(
+                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                (now_madrid(), entry_id),
+            )
+            db.conn.commit()
+            result = db.update_entry(entry_id, user_id=999)
+            assert result is False
+        finally:
+            db.close()

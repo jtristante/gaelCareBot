@@ -22,6 +22,7 @@ from gaelcarebot.handlers.editar import (
     _validate_cantidad,
     _validate_fecha,
 )
+from gaelcarebot.db import MilkDatabase, now_madrid
 from gaelcarebot.messages import (
     ERROR_NO_ENTRIES,
     ERROR_ENTRY_NOT_FOUND,
@@ -655,3 +656,83 @@ class TestEditarModifyTipo:
         # Verify consumed_at was NOT modified
         mock_db.conn.execute.assert_not_called()
         mock_db.conn.commit.assert_not_called()
+
+
+class TestEditTipoIntegration:
+    """RED tests — integration tests for editing tipo field with a REAL MilkDatabase.
+
+    These tests MUST FAIL because ``update_entry()`` has
+    ``WHERE consumed_at IS NULL`` at ``db.py:237``, which silently
+    prevents updating entries marked as consumed (SALIDA entries).
+
+    Using ``MilkDatabase(":memory:")`` — no mocks.
+    """
+
+    def test_edit_entrada_to_salida_to_entrada_roundtrip(self) -> None:
+        """ENTRADA→SALIDA→ENTRADA round-trip fails due to consumed_at guard.
+
+        RED: must FAIL because update_entry's WHERE consumed_at IS NULL
+        prevents SALIDA→ENTRADA conversion, leaving the entry as SALIDA
+        with consumed_at still set.
+        """
+        db = MilkDatabase(":memory:")
+        db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
+
+        db.update_entry(1, tipo="SALIDA")
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            (now_madrid(), 1),
+        )
+        db.conn.commit()
+
+        db.update_entry(1, tipo="ENTRADA")
+
+        entry = db.get_entry(1, include_consumed=True)
+        assert entry["consumed_at"] is None
+        assert entry["tipo"] == "ENTRADA"
+
+    def test_edit_roundtrip_preserves_stock(self) -> None:
+        """Stock is NOT preserved after ENTRADA→SALIDA→ENTRADA round-trip.
+
+        RED: must FAIL because converting back to ENTRADA fails silently,
+        so the entry remains a consumed SALIDA and is excluded from stock
+        calculations — stock drops from 200 to 0.
+        """
+        db = MilkDatabase(":memory:")
+        db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
+        initial_stock = db.get_total_stock()
+
+        db.update_entry(1, tipo="SALIDA")
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            (now_madrid(), 1),
+        )
+        db.conn.commit()
+
+        db.update_entry(1, tipo="ENTRADA")
+
+        assert db.get_total_stock() == initial_stock
+
+    def test_edit_salida_to_entrada_when_consumed_at_set(self) -> None:
+        """update_entry() returns False when consumed_at IS NOT NULL.
+
+        RED: must FAIL because ``update_entry()`` has
+        ``WHERE consumed_at IS NULL`` which silently prevents any
+        update to entries with consumed_at set — even tipo changes
+        from SALIDA back to ENTRADA.
+        """
+        db = MilkDatabase(":memory:")
+        db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
+
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ?, tipo = ? WHERE id = ?",
+            (now_madrid(), "SALIDA", 1),
+        )
+        db.conn.commit()
+
+        success = db.update_entry(1, tipo="ENTRADA")
+        entry = db.get_entry(1, include_consumed=True)
+
+        assert success is True
+        assert entry["tipo"] == "ENTRADA"
+        assert entry["consumed_at"] is None
