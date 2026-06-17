@@ -14,7 +14,7 @@ Bot de Telegram para gestionar el stock de leche materna. Permite registrar extr
 | `BOT_TOKEN` | Sí | Token del bot de Telegram (se obtiene de @BotFather) |
 | `AUTHORIZED_USER_IDS` | Sí | IDs de usuario de Telegram autorizados, separados por coma |
 | `GROUP_CHAT_ID` | No | ID del grupo de Telegram para notificaciones (opcional) |
-| `DB_PATH` | No | Ruta del archivo SQLite (por defecto: `data/milk.db`) |
+| `DB_PATH` | No | Ruta del archivo SQLite (por defecto: `data/gael_care_bot.db`) |
 | `TIMEZONE` | No | Zona horaria (por defecto: `Europe/Madrid`) |
 | `CONVERSATION_TIMEOUT` | No | Tiempo de espera de conversación en segundos (por defecto: 300) |
 

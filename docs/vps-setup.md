@@ -20,7 +20,7 @@ Crear la siguiente estructura en el VPS:
 ├── docker-compose.prod.yml   # (desde el repo)
 ├── .env                      # (crear manualmente, ver abajo)
 ├── data/                     # (se crea automáticamente)
-│   └── milk.db               # Base de datos SQLite
+│   └── gael_care_bot.db      # Base de datos SQLite
 └── actions-runner/           # Runner de GitHub Actions
     └── ...                   # (se instala en paso 2)
 ```
@@ -45,7 +45,7 @@ Editar con los valores reales:
 | `BOT_TOKEN` | Token de @BotFather | `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz` |
 | `AUTHORIZED_USER_IDS` | Tu ID de Telegram | `987654321` |
 | `GROUP_CHAT_ID` | ID del grupo (opcional) | `-1009876543210` |
-| `DB_PATH` | Ruta BD (opcional) | `/data/milk.db` |
+| `DB_PATH` | Ruta BD (opcional) | `/data/gael_care_bot.db` |
 | `TIMEZONE` | Zona horaria | `Europe/Madrid` |
 
 ## Instalar self-hosted runner

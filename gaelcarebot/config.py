@@ -20,7 +20,7 @@ class Config:
     bot_token: str
     authorized_user_ids: Set[int]
     group_chat_id: Optional[int] = None
-    db_path: str = "data/milk.db"
+    db_path: str = "data/gael_care_bot.db"
     timezone: str = "Europe/Madrid"
     conversation_timeout: int = field(default=300)
 
@@ -85,7 +85,7 @@ def load_config(dotenv_path: Optional[str] = None) -> Config:
         except ValueError:
             logger.warning("Invalid GROUP_CHAT_ID value: %r; ignoring", raw_group)
 
-    db_path = os.environ.get("DB_PATH", "data/milk.db")
+    db_path = os.environ.get("DB_PATH", "data/gael_care_bot.db")
     timezone = os.environ.get("TIMEZONE", "Europe/Madrid")
     timeout_raw = os.environ.get("CONVERSATION_TIMEOUT", "300")
     try:

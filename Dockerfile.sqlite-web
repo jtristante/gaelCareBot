@@ -16,4 +16,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request as u; exit(0 if u.urlopen('http://localhost:8080/').status == 200 else 1)"
 
 ENTRYPOINT ["sqlite_web"]
-CMD ["-H", "0.0.0.0", "-p", "8080", "-P", "-x", "/data/milk.db"]
+CMD ["-H", "0.0.0.0", "-p", "8080", "-P", "-x", "/data/gael_care_bot.db"]

@@ -100,7 +100,7 @@ docker compose down            # Stop
 
 ## NOTES
 
-- `DB_PATH` in `.env` uses `/data/milk.db` (Docker path). Local dev without Docker must set `DB_PATH=data/milk.db`.
+- `DB_PATH` in `.env` uses `/data/gael_care_bot.db` (Docker path). Local dev without Docker must set `DB_PATH=data/gael_care_bot.db`.
 - `config.timezone` is read from env but **never passed to MilkDatabase** — `now_madrid()` hardcodes UTC+2. Known bug.
 - `devops-notes.md` contains deployment workflows (GHCR, Watchtower, SSH) — gitignored, personal notes.
 - No CI/CD configured yet — no `.github/workflows/`.
