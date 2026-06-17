@@ -703,3 +703,170 @@ class TestUpdateEntryGuard:
             assert result is False
         finally:
             db.close()
+
+
+class TestMigrationTransactionsToMilkEntries:
+    """Tests for the transactions → milk_entries migration.
+
+    These tests must FAIL (RED) until the migration is implemented.
+    They simulate an existing production database with the old
+    ``transactions`` table and verify that ``_migrate_schema()``
+    correctly renames the table and its columns.
+    """
+
+    def test_migration_renames_table_and_columns(self) -> None:
+        """Migrate old transactions table to milk_entries with renamed columns.
+
+        Must FAIL (RED) because the migration is not yet implemented.
+        Expected to PASS (GREEN) once the migration handles
+        transactions → milk_entries, including column renames:
+        tipo→entry_type, cantidad→amount, add_at→event_date, notas→notes.
+        """
+        db = MilkDatabase(":memory:")
+        try:
+            # Drop auto-created milk_entries, create old schema instead
+            db.conn.execute("DROP TABLE IF EXISTS milk_entries")
+            db.conn.execute(
+                """CREATE TABLE transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tipo TEXT NOT NULL,
+                    cantidad INTEGER NOT NULL,
+                    add_at TEXT NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    username TEXT,
+                    notas TEXT,
+                    created_at TEXT NOT NULL,
+                    consumed_at TEXT DEFAULT NULL
+                )"""
+            )
+            for row in [
+                ("ENTRADA", 200, "2026-06-18T10:00:00", 123, "testuser", "test notes", "2026-06-18T10:00:00", None),
+                ("SALIDA", 100, "2026-06-18T11:00:00", 456, "other", None, "2026-06-18T11:00:00", "2026-06-18T11:00:00"),
+                ("ENTRADA", 150, "2026-06-18T12:00:00", 789, "third", "more notes", "2026-06-18T12:00:00", None),
+            ]:
+                db.conn.execute(
+                    "INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, created_at, consumed_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    row,
+                )
+            db.conn.commit()
+
+            # This will crash (RED) because the migration doesn't handle
+            # transactions→milk_entries yet. The bare UPDATE milk_entries
+            # in _migrate_schema() will raise OperationalError.
+            db._migrate_schema()
+
+            # Assertions below only run once the migration is implemented (GREEN).
+            tables = {
+                row[0]
+                for row in db.conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            assert "milk_entries" in tables
+            assert "transactions" not in tables
+
+            cur = db.conn.execute("PRAGMA table_info(milk_entries)")
+            columns = {row[1] for row in cur.fetchall()}
+            for col in ("entry_type", "amount", "event_date", "notes"):
+                assert col in columns, f"Column {col!r} should exist in milk_entries"
+            for col in ("tipo", "cantidad", "add_at", "notas"):
+                assert col not in columns, f"Column {col!r} should not exist in milk_entries"
+
+            row_count = db.conn.execute(
+                "SELECT COUNT(*) FROM milk_entries"
+            ).fetchone()[0]
+            assert row_count == 3, f"Expected 3 rows, got {row_count}"
+
+            sample = db.conn.execute(
+                "SELECT entry_type, amount, event_date, notes FROM milk_entries WHERE id = 1"
+            ).fetchone()
+            assert sample is not None
+            assert tuple(sample) == ("ENTRADA", 200, "2026-06-18T10:00:00", "test notes")
+        finally:
+            db.close()
+
+    def test_migration_is_idempotent(self) -> None:
+        """Calling _migrate_schema() twice should not duplicate rows or raise.
+
+        Must FAIL (RED) because the migration is not yet implemented.
+        Expected to PASS (GREEN) once the migration handles idempotency
+        correctly (e.g., by checking if transactions table exists before
+        attempting the migration).
+        """
+        db = MilkDatabase(":memory:")
+        try:
+            # Drop auto-created milk_entries, create old schema instead
+            db.conn.execute("DROP TABLE IF EXISTS milk_entries")
+            db.conn.execute(
+                """CREATE TABLE transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tipo TEXT NOT NULL,
+                    cantidad INTEGER NOT NULL,
+                    add_at TEXT NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    username TEXT,
+                    notas TEXT,
+                    created_at TEXT NOT NULL,
+                    consumed_at TEXT DEFAULT NULL
+                )"""
+            )
+            for row in [
+                ("ENTRADA", 200, "2026-06-18T10:00:00", 123, "testuser", None, "2026-06-18T10:00:00", None),
+                ("SALIDA", 100, "2026-06-18T11:00:00", 456, "other", None, "2026-06-18T11:00:00", "2026-06-18T11:00:00"),
+            ]:
+                db.conn.execute(
+                    "INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, created_at, consumed_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    row,
+                )
+            db.conn.commit()
+
+            # First call — crashes (RED) because migration doesn't exist yet
+            db._migrate_schema()
+
+            # Assertions below only run when migration is implemented (GREEN)
+            row_count = db.conn.execute(
+                "SELECT COUNT(*) FROM milk_entries"
+            ).fetchone()[0]
+
+            # Second call — should not raise or duplicate data
+            db._migrate_schema()
+
+            assert (
+                db.conn.execute("SELECT COUNT(*) FROM milk_entries").fetchone()[0]
+                == row_count
+            ), "Second migration call should not duplicate rows"
+        finally:
+            db.close()
+
+    def test_clean_database_unaffected(self) -> None:
+        """A fresh database without the old transactions table is not affected.
+
+        Should PASS (GREEN) in both RED and GREEN states — this is a
+        regression test ensuring the migration is a no-op when there is
+        no legacy data.
+        """
+        db = MilkDatabase(":memory:")
+        try:
+            # Database starts clean with milk_entries from constructor
+            db.add_entry("ENTRADA", 100, "2026-06-18T10:00:00", 123)
+            db.conn.commit()
+
+            # Should be a no-op on a clean database
+            db._migrate_schema()
+
+            # Verify row still exists
+            row = db.conn.execute(
+                "SELECT entry_type, amount, event_date, user_id FROM milk_entries WHERE id = 1"
+            ).fetchone()
+            assert row is not None
+            assert tuple(row) == ("ENTRADA", 100, "2026-06-18T10:00:00", 123)
+
+            # Verify transactions table does not exist
+            cur = db.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
+            )
+            assert cur.fetchone() is None, "transactions table should not exist"
+        finally:
+            db.close()
