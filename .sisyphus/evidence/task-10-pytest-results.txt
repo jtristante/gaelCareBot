@@ -1,0 +1,106 @@
+Test suite run: 2026-05-21
+Command: .venv/bin/python -m pytest -v
+Working directory: /home/jtristante/Projects/GaelCareBot
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /home/jtristante/Projects/GaelCareBot/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/jtristante/Projects/GaelCareBot
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.13.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 77 items
+
+tests/test_agregar.py::test_agregar_valid PASSED                         [  1%]
+tests/test_agregar.py::test_agregar_invalid_negative PASSED              [  2%]
+tests/test_agregar.py::test_agregar_invalid_zero PASSED                  [  3%]
+tests/test_agregar.py::test_agregar_non_numeric PASSED                   [  5%]
+tests/test_agregar.py::test_agregar_with_notes PASSED                    [  6%]
+tests/test_agregar.py::test_agregar_missing_args PASSED                  [  7%]
+tests/test_agregar.py::test_agregar_unauthorized PASSED                  [  9%]
+tests/test_consumir.py::TestParseDdMmYyyy::test_valid_date PASSED        [ 10%]
+tests/test_consumir.py::TestParseDdMmYyyy::test_invalid_format PASSED    [ 11%]
+tests/test_consumir.py::TestParseDdMmYyyy::test_invalid_calendar_date PASSED [ 12%]
+tests/test_consumir.py::TestParseDdMmYyyy::test_empty_string PASSED      [ 14%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_valid PASSED  [ 15%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_insufficient_stock PASSED [ 16%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_invalid_date PASSED [ 18%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_wrong_format PASSED [ 19%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_negative PASSED [ 20%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_zero PASSED   [ 22%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_exact_stock PASSED [ 23%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_future_date PASSED [ 24%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_missing_args PASSED [ 25%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_missing_date PASSED [ 27%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_unauthorized PASSED [ 28%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_with_notes PASSED [ 29%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_invalid_amount_string PASSED [ 31%]
+tests/test_consumir.py::TestConsumirCommand::test_consumir_no_db_in_context PASSED [ 32%]
+tests/test_db.py::TestMilkDatabase::test_empty_database PASSED           [ 33%]
+tests/test_db.py::TestMilkDatabase::test_get_entry_returns_none_for_missing PASSED [ 35%]
+tests/test_db.py::TestMilkDatabase::test_add_entry PASSED                [ 36%]
+tests/test_db.py::TestMilkDatabase::test_add_multiple_entries PASSED     [ 37%]
+tests/test_db.py::TestMilkDatabase::test_get_total_stock PASSED          [ 38%]
+tests/test_db.py::TestMilkDatabase::test_get_total_stock_only_entrada PASSED [ 40%]
+tests/test_db.py::TestMilkDatabase::test_get_total_stock_negative_returns_zero PASSED [ 41%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary PASSED        [ 42%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary_empty_day PASSED [ 44%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary_only_entrada PASSED [ 45%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary_only_salida PASSED [ 46%]
+tests/test_db.py::TestMilkDatabase::test_update_entry PASSED             [ 48%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_tipo PASSED        [ 49%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_notas PASSED       [ 50%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_multiple_fields PASSED [ 51%]
+tests/test_db.py::TestMilkDatabase::test_update_nonexistent_entry PASSED [ 53%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_invalid_column PASSED [ 54%]
+tests/test_db.py::TestMilkDatabase::test_delete_entry PASSED             [ 55%]
+tests/test_db.py::TestMilkDatabase::test_delete_nonexistent_entry PASSED [ 57%]
+tests/test_db.py::TestMilkDatabase::test_wal_mode PASSED                 [ 58%]
+tests/test_db.py::TestMilkDatabase::test_context_manager PASSED          [ 59%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_with_all_fields_none PASSED [ 61%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_with_username_and_notas PASSED [ 62%]
+tests/test_db.py::TestMilkDatabase::test_add_invalid_tipo PASSED         [ 63%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_zero_cantidad PASSED  [ 64%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_negative_cantidad PASSED [ 66%]
+tests/test_editar.py::TestValidateCantidad::test_valid_positive_integer PASSED [ 67%]
+tests/test_editar.py::TestValidateCantidad::test_zero_is_invalid PASSED  [ 68%]
+tests/test_editar.py::TestValidateCantidad::test_negative_is_invalid PASSED [ 70%]
+tests/test_editar.py::TestValidateCantidad::test_non_numeric_is_invalid PASSED [ 71%]
+tests/test_editar.py::TestValidateFecha::test_valid_date PASSED          [ 72%]
+tests/test_editar.py::TestValidateFecha::test_invalid_format PASSED      [ 74%]
+tests/test_editar.py::TestValidateFecha::test_invalid_calendar_date PASSED [ 75%]
+tests/test_editar.py::TestValidateFecha::test_empty_string PASSED        [ 76%]
+tests/test_editar.py::TestEditarStart::test_editar_start_empty PASSED    [ 77%]
+tests/test_editar.py::TestEditarStart::test_editar_start_with_entries PASSED [ 79%]
+tests/test_editar.py::TestEditarSelectEntry::test_editar_select_entry PASSED [ 80%]
+tests/test_editar.py::TestEditarModifyCantidad::test_editar_modify_cantidad PASSED [ 81%]
+tests/test_editar.py::TestEditarModifyNotas::test_editar_modify_notas PASSED [ 83%]
+tests/test_editar.py::TestEditarCancel::test_editar_cancel PASSED        [ 84%]
+tests/test_editar.py::TestEditarInvalidCantidad::test_editar_invalid_cantidad PASSED [ 85%]
+tests/test_eliminar.py::TestEliminarStart::test_eliminar_empty PASSED    [ 87%]
+tests/test_eliminar.py::TestEliminarStart::test_eliminar_show_entries PASSED [ 88%]
+tests/test_eliminar.py::TestEliminarConfirm::test_eliminar_confirm PASSED [ 89%]
+tests/test_eliminar.py::TestEliminarCancel::test_eliminar_cancel PASSED  [ 90%]
+tests/test_eliminar.py::TestEliminarInvalidEntry::test_eliminar_invalid_entry PASSED [ 92%]
+tests/test_stock.py::test_stock_empty PASSED                             [ 93%]
+tests/test_stock.py::test_stock_with_entries PASSED                      [ 94%]
+tests/test_stock.py::test_stock_pagination PASSED                        [ 96%]
+tests/test_total.py::test_total_positive PASSED                          [ 97%]
+tests/test_total.py::test_total_zero PASSED                              [ 98%]
+tests/test_total.py::test_total_after_full_consumption PASSED            [100%]
+
+=============================== warnings summary ===============================
+src/handlers/editar.py:340
+  /home/jtristante/Projects/GaelCareBot/src/handlers/editar.py:340: PTBUserWarning: If 'per_message=False', 'CallbackQueryHandler' will not be tracked for every message. Read this FAQ entry to learn more about the per_* settings: https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do.
+    editar_conv_handler = ConversationHandler(
+
+src/handlers/eliminar.py:189
+  /home/jtristante/Projects/GaelCareBot/src/handlers/eliminar.py:189: PTBUserWarning: If 'per_message=False', 'CallbackQueryHandler' will not be tracked for every message. Read this FAQ entry to learn more about the per_* settings: https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do.
+    eliminar_conv_handler = ConversationHandler(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 77 passed, 2 warnings in 0.67s ========================
+
+RESULT: PASSED (77 passed, 0 failed, 0 errors, 2 warnings)
+Exit code: 0

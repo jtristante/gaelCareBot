@@ -1,0 +1,1 @@
+PASS: Insufficient stock: need 100, available 50

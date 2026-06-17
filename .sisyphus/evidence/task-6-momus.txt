@@ -1,0 +1,14 @@
+Task 4e: Momus fallback verification
+====================================
+Expected: model=moonshotai/kimi-k2.5, variant=high, fallback=opencode/qwen3.6-plus
+Actual:
+{
+  "model": "moonshotai/kimi-k2.5",
+  "variant": "high",
+  "fallback_models": [
+    {
+      "model": "opencode/qwen3.6-plus"
+    }
+  ]
+}
+Status: PASS - Model and variant unchanged, fallback migrated to qwen3.6-plus

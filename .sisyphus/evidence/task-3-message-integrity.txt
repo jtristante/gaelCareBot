@@ -1,0 +1,28 @@
+=== Message Integrity Check ===
+
+Python: Verifying WELCOME_MSG and HELP_MSG HTML integrity
+Result: PASS - No unmatched HTML tags found
+
+$(python3 -c "
+from src.messages import WELCOME_MSG, HELP_MSG
+# Count opening and closing bold tags
+b_open = WELCOME_MSG.count('<b>') + HELP_MSG.count('<b>')
+b_close = WELCOME_MSG.count('</b>') + HELP_MSG.count('</b>')
+# Count opening and closing code tags
+code_open = WELCOME_MSG.count('<code>') + HELP_MSG.count('<code>')
+code_close = WELCOME_MSG.count('</code>') + HELP_MSG.count('</code>')
+# Count pre tags
+pre_open = WELCOME_MSG.count('<pre>') + HELP_MSG.count('<pre>')
+pre_close = WELCOME_MSG.count('</pre>') + HELP_MSG.count('</pre>')
+print(f'<b> tags: {b_open} open / {b_close} close')
+print(f'<code> tags: {code_open} open / {code_close} close')
+print(f'<pre> tags: {pre_open} open / {pre_close} close')
+assert b_open == b_close, f'Bold tags mismatch: {b_open} open, {b_close} close'
+assert code_open == code_close, f'Code tags mismatch: {code_open} open, {code_close} close'
+assert pre_open == pre_close, f'Pre tags mismatch: {pre_open} open, {pre_close} close'
+print('ALL HTML TAGS MATCHED')
+")
+<b> tags: 1 open / 1 close
+<code> tags: 5 open / 5 close
+<pre> tags: 0 open / 0 close
+ALL HTML TAGS MATCHED

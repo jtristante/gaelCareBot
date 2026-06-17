@@ -1,0 +1,44 @@
+=== docker compose ps ===
+  sqlite-web:
+    command:
+      - sqlite_web
+      - -H
+      - 0.0.0.0
+      - -p
+      - "8080"
+      - /data/milk.db
+      - -P
+      - -x
+    container_name: gaelcarebot-sqlite-web
+    depends_on:
+      gaelcarebot:
+        condition: service_started
+        required: true
+    environment:
+      AUTHORIZED_USER_IDS: "434372005"
+      BOT_TOKEN: [REDACTED]
+      CONVERSATION_TIMEOUT: "300"
+      DB_PATH: /data/milk.db
+      GROUP_CHAT_ID: "-1003949059774"
+      SQLITE_WEB_PASSWORD: ""
+      TIMEZONE: Europe/Madrid
+    healthcheck:
+      test:
+        - CMD
+--
+    image: coleifer/sqlite-web:latest
+    logging:
+      driver: json-file
+      options:
+        max-file: "3"
+        max-size: 10m
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 8080
+        published: "8080"
+        protocol: tcp
+    restart: unless-stopped
+    user: 1000:1000

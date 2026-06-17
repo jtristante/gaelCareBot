@@ -1,0 +1,8 @@
+## Prerrequisitos
+## Estructura de directorios
+## Configurar .env
+## Instalar self-hosted runner
+## Clonar config inicial
+## Verificación
+## Pipeline CI/CD (automático)
+## Troubleshooting

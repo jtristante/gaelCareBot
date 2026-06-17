@@ -1,0 +1,1 @@
+{[CMD-SHELL pgrep -f "python -m gaelcarebot.bot" || exit 1] 30s 10s 15s 0s 3}

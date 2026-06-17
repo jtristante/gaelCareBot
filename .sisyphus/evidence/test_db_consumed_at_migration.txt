@@ -1,0 +1,54 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /home/jtristante/Projects/GaelCareBot/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/jtristante/Projects/GaelCareBot
+configfile: pytest.ini
+plugins: anyio-4.13.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 43 items
+
+tests/test_db.py::TestMilkDatabase::test_empty_database PASSED           [  2%]
+tests/test_db.py::TestMilkDatabase::test_get_entry_returns_none_for_missing PASSED [  4%]
+tests/test_db.py::TestMilkDatabase::test_add_entry PASSED                [  6%]
+tests/test_db.py::TestMilkDatabase::test_add_multiple_entries PASSED     [  9%]
+tests/test_db.py::TestMilkDatabase::test_get_total_stock PASSED          [ 11%]
+tests/test_db.py::TestMilkDatabase::test_get_total_stock_only_entrada PASSED [ 13%]
+tests/test_db.py::TestMilkDatabase::test_get_total_stock_negative_returns_zero PASSED [ 16%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary PASSED        [ 18%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary_empty_day PASSED [ 20%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary_only_entrada PASSED [ 23%]
+tests/test_db.py::TestMilkDatabase::test_get_daily_summary_only_salida PASSED [ 25%]
+tests/test_db.py::TestMilkDatabase::test_update_entry PASSED             [ 27%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_tipo PASSED        [ 30%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_notas PASSED       [ 32%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_multiple_fields PASSED [ 34%]
+tests/test_db.py::TestMilkDatabase::test_update_nonexistent_entry PASSED [ 37%]
+tests/test_db.py::TestMilkDatabase::test_update_entry_invalid_column PASSED [ 39%]
+tests/test_db.py::TestMilkDatabase::test_delete_entry PASSED             [ 41%]
+tests/test_db.py::TestMilkDatabase::test_delete_nonexistent_entry PASSED [ 44%]
+tests/test_db.py::TestMilkDatabase::test_wal_mode PASSED                 [ 46%]
+tests/test_db.py::TestMilkDatabase::test_context_manager PASSED          [ 48%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_with_all_fields_none PASSED [ 51%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_with_username_and_notas PASSED [ 53%]
+tests/test_db.py::TestMilkDatabase::test_add_invalid_tipo PASSED         [ 55%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_zero_cantidad PASSED  [ 58%]
+tests/test_db.py::TestMilkDatabase::test_add_entry_negative_cantidad PASSED [ 60%]
+tests/test_db.py::TestSoftDelete::test_soft_delete_returns_true PASSED   [ 62%]
+tests/test_db.py::TestSoftDelete::test_soft_delete_twice_returns_false PASSED [ 65%]
+tests/test_db.py::TestSoftDelete::test_get_entry_returns_none_for_soft_deleted PASSED [ 67%]
+tests/test_db.py::TestSoftDelete::test_get_all_entries_excludes_soft_deleted PASSED [ 69%]
+tests/test_db.py::TestSoftDelete::test_get_total_stock_excludes_soft_deleted PASSED [ 72%]
+tests/test_db.py::TestSoftDelete::test_get_total_stock_excludes_soft_deleted_salida PASSED [ 74%]
+tests/test_db.py::TestSoftDelete::test_get_entries_by_date_excludes_soft_deleted PASSED [ 76%]
+tests/test_db.py::TestSoftDelete::test_get_daily_summary_excludes_soft_deleted PASSED [ 79%]
+tests/test_db.py::TestSoftDelete::test_update_entry_on_soft_deleted_returns_false PASSED [ 81%]
+tests/test_db.py::TestSoftDelete::test_add_entry_still_works_after_soft_deletes PASSED [ 83%]
+tests/test_db.py::TestSoftDelete::test_soft_deleted_entry_has_consumed_at_set PASSED [ 86%]
+tests/test_db.py::TestResetDatabase::test_reset_clears_all_entries PASSED [ 88%]
+tests/test_db.py::TestResetDatabase::test_reset_zeroes_total_stock PASSED [ 90%]
+tests/test_db.py::TestResetDatabase::test_reset_resets_id_sequence PASSED [ 93%]
+tests/test_db.py::TestResetDatabase::test_reset_preserves_schema PASSED  [ 95%]
+tests/test_db.py::TestResetDatabase::test_reset_idempotent PASSED        [ 97%]
+tests/test_db.py::TestResetDatabase::test_reset_raises_without_confirm PASSED [100%]
+
+============================== 43 passed in 0.10s ==============================

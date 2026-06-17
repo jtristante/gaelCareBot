@@ -1,0 +1,53 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/jtristante/Projects/GaelCareBot
+configfile: pytest.ini
+plugins: anyio-4.13.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+tests/test_consumir.py::TestReversalMode::test_reversal_confirm_changes_tipo FAILED [ 33%]
+tests/test_consumir.py::TestReversalMode::test_reversal_sends_notification FAILED [ 66%]
+tests/test_consumir.py::TestReversalMode::test_reversal_notification_failure_does_not_block FAILED [100%]
+
+=================================== FAILURES ===================================
+_____________ TestReversalMode.test_reversal_confirm_changes_tipo ______________
+tests/test_consumir.py:594: in test_reversal_confirm_changes_tipo
+    update.callback_query.edit_message_text.assert_called_once_with(
+/usr/lib/python3.12/unittest/mock.py:956: in assert_called_once_with
+    return self.assert_called_with(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:944: in assert_called_with
+    raise AssertionError(_error_message()) from cause
+E   AssertionError: expected call not found.
+E   Expected: edit_message_text('🍼 100 ml de leche consumidos el 19/05/2026.')
+E     Actual: edit_message_text('🔄 Entrada #1 cambiada a SALIDA.')
+______________ TestReversalMode.test_reversal_sends_notification _______________
+tests/test_consumir.py:698: in test_reversal_sends_notification
+    mock_notify.assert_called_once_with(ctx.bot, mock_db)
+/usr/lib/python3.12/unittest/mock.py:955: in assert_called_once_with
+    raise AssertionError(msg)
+E   AssertionError: Expected 'send_daily_summary' to be called once. Called 0 times.
+______ TestReversalMode.test_reversal_notification_failure_does_not_block ______
+tests/test_consumir.py:735: in test_reversal_notification_failure_does_not_block
+    update.callback_query.edit_message_text.assert_called_once_with(
+/usr/lib/python3.12/unittest/mock.py:956: in assert_called_once_with
+    return self.assert_called_with(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/unittest/mock.py:944: in assert_called_with
+    raise AssertionError(_error_message()) from cause
+E   AssertionError: expected call not found.
+E   Expected: edit_message_text('🍼 100 ml de leche consumidos el 19/05/2026.')
+E     Actual: edit_message_text('🔄 Entrada #1 cambiada a SALIDA.')
+=============================== warnings summary ===============================
+src/handlers/consumir.py:367
+  /home/jtristante/Projects/GaelCareBot/src/handlers/consumir.py:367: PTBUserWarning: If 'per_message=False', 'CallbackQueryHandler' will not be tracked for every message. Read this FAQ entry to learn more about the per_* settings: https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do.
+    consumir_conv_handler = ConversationHandler(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_consumir.py::TestReversalMode::test_reversal_confirm_changes_tipo
+FAILED tests/test_consumir.py::TestReversalMode::test_reversal_sends_notification
+FAILED tests/test_consumir.py::TestReversalMode::test_reversal_notification_failure_does_not_block
+========================= 3 failed, 1 warning in 0.62s =========================

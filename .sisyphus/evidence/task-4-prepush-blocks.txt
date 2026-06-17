@@ -1,0 +1,39 @@
+Task 4: QA Scenario 2 — Pre-push Hook Blocks Secret Push
+==========================================================
+Date: 2026-06-16
+
+=== Steps ===
+
+1. Added fake BOT_TOKEN to gaelcarebot/messages.py
+   echo "BOT_TOKEN=999888777:AAbadcdefghijklmnopqrstuvwxyz999" >> gaelcarebot/messages.py
+
+2. Staged: git add gaelcarebot/messages.py
+
+3. Committed (--no-verify to bypass pre-commit): 
+   git commit --no-verify -m "test: fake secret for push hook test"
+
+4. git push origin master 2>&1
+   Output:
+     gaelcarebot/messages.py:151:BOT_TOKEN=999888777:AAbadcdefghijklmnopqrstuvwxyz999
+     [ERROR] Matched one or more prohibited patterns
+     
+     Possible mitigations:
+     - Mark false positives as allowed using: git config --add secrets.allowed ...
+     - Mark false positives as allowed by adding regular expressions to .gitallowed ...
+     - List your configured patterns: git config --get-all secrets.patterns
+     - List your configured allowed patterns: git config --get-all secrets.allowed
+     - List your configured allowed patterns in .gitallowed ...
+     - Use --no-verify if this is a one-time false positive
+     error: falló el empuje de algunas referencias a 'github.com:jtristante/gaelCareBot.git'
+   Exit code: 1 (BLOCKED)
+
+5. Cleanup: git reset --hard HEAD~1
+   Output: HEAD está ahora en d4b9d14
+
+6. Verification: git status
+   Output: "Tu rama está actualizada con 'origin/master'."
+   Working tree clean (only untracked .git.backup-pre-cleanup/)
+
+=== Result ===
+PASS — Pre-push hook correctly detected and blocked the secret token pattern
+"999888777:AAbadcdefghijklmnopqrstuvwxyz999" matching pattern "[0-9]+:AA[A-Za-z0-9_-]{30,}"

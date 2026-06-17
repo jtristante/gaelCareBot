@@ -1,0 +1,15 @@
+Unauthorized access attempt by user_id=1 username=<MagicMock name='mock.effective_user.username' id='133733423886560'>
+Traceback (most recent call last):
+  File "<string>", line 13, in <module>
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/jtristante/Projects/GaelCareBot/src/auth.py", line 82, in wrapper
+    await msg.reply_text(ERROR_UNAUTHORIZED)
+TypeError: object MagicMock can't be used in 'await' expression

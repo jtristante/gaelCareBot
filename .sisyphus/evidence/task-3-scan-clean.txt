@@ -1,0 +1,46 @@
+Task 3 — git-secrets Secret Scan Results
+==========================================
+Date: 2026-06-16
+Repository: /home/jtristante/Projects/GaelCareBot
+git-secrets path: /home/jtristante/.local/bin/git-secrets
+
+=== Test 1: git secrets --scan-history (full repo) ===
+Command: git secrets --scan-history 2>&1
+Exit code: 0
+Output: (empty — no matches)
+Result: PASS — no secrets found in full git history
+
+=== Test 2: Verify 5 local-ahead commits ===
+Command: git log --oneline origin/master..HEAD
+Output:
+  d4b9d14 chore: add anti-pattern for example values in documentation
+  3f472da docs: add VPS self-hosted runner setup guide
+  78f62c1 ci: add CI (test+build+push) and deploy (self-hosted runner) workflows
+  1b30b25 perf: optimize Dockerfile with separate dependency layer and add HEALTHCHECK
+  035a7e2 feat: add production docker-compose config, .dockerignore, and update project URL
+Count: 5 commits
+Result: PASS — exactly 5 commits ahead of origin/master
+
+=== Test 3: Scan files changed in ahead commits ===
+Files changed (from git diff --name-only origin/master...HEAD):
+  - AGENTS.md
+  - docker-compose.prod.yml
+  - Dockerfile
+  - .dockerignore
+  - docs/vps-setup.md
+  - .github/workflows/ci.yml
+  - .github/workflows/deploy.yml
+  - pyproject.toml
+Command: git secrets --scan <all 8 files>
+Exit code: 0
+Output: (empty — no matches)
+Result: PASS — no secrets in the 5 ahead-commit files
+
+=== git-secrets Configuration ===
+Pattern registered:
+  - [0-9]+:AA[A-Za-z0-9_-]{30,}  (Telegram bot token pattern)
+Allowed pattern:
+  - 1234567890:ABCdefGHIJKlmnopQRSTuvwxyzABCDEFGHI (placeholder)
+
+=== Overall Verdict ===
+PASS — no secret tokens found in any git history or ahead commits

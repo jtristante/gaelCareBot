@@ -1,0 +1,16 @@
+Task 9: Verify kimi-k2-thinking preserved in opencode.json
+===========================================================
+Command: jq -e '.provider.moonshot.models["kimi-k2-thinking"]' ~/.config/opencode/opencode.json
+
+Result: SUCCESS - kimi-k2-thinking model is preserved:
+{
+  "name": "Kimi K2 Thinking",
+  "limit": {
+    "context": 128000,
+    "output": 16384
+  },
+  "modalities": {
+    "input": ["text", "image"],
+    "output": ["text"]
+  }
+}

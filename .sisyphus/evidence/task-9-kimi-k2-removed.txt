@@ -1,0 +1,6 @@
+Task 9: Verify kimi-k2 removal from opencode.json
+===================================================
+Command: jq -e '.provider.moonshot.models["kimi-k2"]' ~/.config/opencode/opencode.json
+
+Result: null (exit code 1)
+CONFIRMED: kimi-k2 model has been removed from provider.moonshot.models

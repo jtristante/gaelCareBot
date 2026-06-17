@@ -113,6 +113,52 @@ El resumen incluye todas las entradas del día actual con el formato:
   Balance: ZZZ ml
 ```
 
+## Acceso a la base de datos (sqlite-web)
+
+El proyecto incluye [sqlite-web](https://github.com/coleifer/sqlite-web), un navegador web ligero para SQLite que permite consultar y editar la base de datos desde el navegador.
+
+**Requisito**: Tener [Tailscale](https://tailscale.com/) configurado en la VPS y en tu dispositivo cliente.
+
+### Configuracion
+
+Anade al archivo `.env`:
+
+```bash
+# Contrasena para acceder a sqlite-web (obligatorio)
+SQLITE_WEB_PASSWORD=tu_contrasena_segura
+
+# Puerto (opcional, por defecto 8080)
+SQLITE_WEB_PORT=8080
+```
+
+Reconstruye los contenedores:
+
+```bash
+docker compose up -d
+```
+
+### Acceso
+
+Abre en tu navegador (desde cualquier dispositivo conectado a tu tailnet):
+
+```
+http://<ip-tailscale-de-la-vps>:8080
+```
+
+O si usas MagicDNS:
+
+```
+http://<hostname>.ts.net:8080
+```
+
+Introduce la contrasena configurada en `SQLITE_WEB_PASSWORD`.
+
+### Seguridad
+
+- La base de datos **NO esta expuesta a internet**. Solo es accesible a traves de tu red privada Tailscale.
+- No compartas la contrasena ni la expongas en repositorios publicos.
+- No dejes la sesion de sqlite-web abierta indefinidamente -- puede interferir con el checkpoint automatico de WAL de SQLite.
+
 ## Estructura del proyecto
 
 ```

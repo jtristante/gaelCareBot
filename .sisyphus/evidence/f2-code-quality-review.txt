@@ -1,0 +1,113 @@
+F2. Code Quality Review — Git Hooks / git-secrets / Local Config
+================================================================
+Date: 2026-06-16
+Scope: Read-only review of .git/hooks/*, .git/config git-secrets entries,
+       and .env.example. No files modified.
+
+REPOSITORY STATE
+----------------
+HEAD: d4b9d14329975e73756e3cd7102a3a72f8319c16
+Working tree: clean (only untracked .git.backup-pre-cleanup/ present)
+
+HOOK FILES
+----------
+Command: ls -la .git/hooks/pre-commit .git/hooks/commit-msg .git/hooks/pre-push
+Output:
+-rwxrwxr-x 1 jtristante jtristante 58 jun 16 01:53 .git/hooks/commit-msg
+-rwxrwxr-x 1 jtristante jtristante 58 jun 16 01:53 .git/hooks/pre-commit
+-rwxrwxr-x 1 jtristante jtristante 39 jun 16 01:57 .git/hooks/pre-push
+
+All three hooks exist, are non-sample files, and are executable by the owner.
+Hook count active: 3/3
+
+HOOK CONTENTS
+-------------
+.git/hooks/pre-commit:
+  #!/usr/bin/env bash
+  git secrets --pre_commit_hook -- "$@"
+
+.git/hooks/commit-msg:
+  #!/usr/bin/env bash
+  git secrets --commit_msg_hook -- "$@"
+
+.git/hooks/pre-push:
+  #!/usr/bin/env bash
+  git secrets --scan
+
+All hooks delegate to git-secrets using the documented hook modes.
+Content assessment: proper / expected.
+
+HOOK PERMISSIONS
+----------------
+Command: stat --format '%a %A' .git/hooks/pre-commit .git/hooks/commit-msg .git/hooks/pre-push
+Output:
+775 -rwxrwxr-x
+775 -rwxrwxr-x
+775 -rwxrwxr-x
+
+- Owner: read/write/execute (rwx) -> OK
+- Group: read/write/execute (rwx) -> noted, not flagged by review criteria
+- Other: read/execute (r-x) -> NOT world-writable -> OK
+
+Permissions verdict: PASS (executable by owner, no "other" write bit)
+
+GIT-SECRETS CONFIG
+------------------
+Command: git secrets --list
+Output:
+secrets.patterns [0-9]+:AA[A-Za-z0-9_-]{30,}
+secrets.allowed 1234567890:ABCdefGHIJKlmnopQRSTuvwxyzABCDEFGHI
+
+Command: git config --local --list
+Output:
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+remote.origin.url=git@github.com:jtristante/gaelCareBot.git
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.master.remote=origin
+branch.master.merge=refs/heads/master
+secrets.patterns=[0-9]+:AA[A-Za-z0-9_-]{30,}
+secrets.allowed=1234567890:ABCdefGHIJKlmnopQRSTuvwxyzABCDEFGHI
+
+- Telegram bot token pattern registered: YES
+- Allowed pattern for .env.example placeholder registered: YES
+- AWS patterns/providers registered: NO
+- Extra providers or global installs: NONE observed
+
+Config verdict: 2/2 required entries present, 0 forbidden entries
+
+AWS PATTERN CHECK
+-----------------
+Command: git secrets --list | grep -iE 'AKIA|aws|amazon|provider'
+Result: no matches (grep exit code 1)
+
+SECRET LEAK VERIFICATION
+------------------------
+Command: git secrets --scan-history
+Result: exit code 0, no matches reported
+
+Command: git secrets --scan .env.example
+Result: exit code 0, no matches reported
+
+No secrets introduced during cleanup; committed history and .env.example are clean.
+
+.env.example NOTE
+-----------------
+Current .env.example contents:
+BOT_TOKEN=
+AUTHORIZED_USER_IDS=123456789,987654321
+GROUP_CHAT_ID=-1001234567890
+DB_PATH=data/milk.db
+TIMEZONE=Europe/Madrid
+CONVERSATION_TIMEOUT=300
+
+The allowed git-secrets pattern matches the documented placeholder token
+(1234567890:ABCdefGHIJKlmnopQRSTuvwxyzABCDEFGHI). The live .env.example
+leaves BOT_TOKEN empty, so the allowed pattern is currently a no-op but does
+not create a false positive. No action required.
+
+FINAL VERDICT
+-------------
+Hooks [3/3 active] | Permissions [PASS] | Config [2/2] | VERDICT: APPROVE

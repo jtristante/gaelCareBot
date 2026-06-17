@@ -1,0 +1,148 @@
+============================================================
+PLAN COMPLIANCE AUDIT — oracle (F1)
+============================================================
+Plan: secret-cleanup.md
+Date: 2026-06-16
+Auditor: oracle agent
+Repository: GaelCareBot (HEAD: d4b9d14)
+============================================================
+
+---
+MUST HAVE CHECKLIST [3/3] — ALL PASS
+---
+
+MH-1: Blob ff8bc30 irreversibly removed from local .git/
+  VERDICT: PASS ✅
+  Command: git cat-file -t ff8bc30
+  Result:  fatal: Not a valid object name ff8bc30 (exit 128)
+  Command: git fsck --unreachable --no-reflogs
+  Result:  6 unreachable objects listed; NONE match ff8bc30
+            (commit 2535684, blobs 3026b06, f5a6378, trees 8983716, ad97aed, c147dbe)
+  Evidence: task-1-blob-purged.txt — confirms PASS with empty grep
+            task-1-backup-integrity.txt — confirms blob EXISTS in backup (line 39)
+  NOTE:     Reflog currently has 2 entries from Task 4's legitimate QA testing
+            (commit+reset of fake secret test). These do NOT anchor the target blob.
+            Original reflog was verified empty at Task 1 execution time.
+
+MH-2: git-secrets hooks active and blocking commits with Telegram token patterns
+  VERDICT: PASS ✅
+  Binary:   /home/jtristante/.local/bin/git-secrets (exists)
+  Hooks:    pre-commit   EXECUTABLE ✅
+            commit-msg   EXECUTABLE ✅
+            pre-push     EXECUTABLE ✅
+  Pattern:  [0-9]+:AA[A-Za-z0-9_-]{30,} (registered)
+  Allowed:  1234567890:ABCdefGHIJKlmnopQRSTuvwxyzABCDEFGHI (placeholder)
+  Detection: Commit blocked with EXIT_CODE=1 (task-2-hook-blocks-secret.txt)
+  Evidence: task-2-hooks-active.txt — all hooks confirmed executable
+            task-2-hook-blocks-secret.txt — fake token commit blocked
+
+MH-3: Remote verified clean before push and after push
+  VERDICT: PASS ✅
+  Push:     bd2ce9e..d4b9d14 → origin/master (exit 0)
+  HEAD:     d4b9d14329975e73756e3cd7102a3a72f8319c16
+  Remote:   d4b9d14329975e73756e3cd7102a3a72f8319c16  (MATCH)
+  Blob:     git rev-list --objects origin/master | grep ff8bc30 → exit 1 (NOT FOUND)
+  Status:   "Tu rama está actualizada con 'origin/master'"
+  Scan:     git secrets --scan-history → exit 0 (clean)
+  Evidence: task-4-push-verified.txt — all 6 checks passed
+            task-4-prepush-blocks.txt — pre-push hook blocks secret pushes
+
+---
+MUST NOT HAVE CHECKLIST [7/7] — ALL CLEAN
+---
+
+MNH-1: Do NOT touch .env, data/milk.db, Docker images, or any application code
+  VERDICT: PASS ✅
+  git diff HEAD -- .env                        → (empty)
+  git diff HEAD -- data/                       → (empty)
+  git diff HEAD -- Dockerfile                  → (empty)
+  git diff HEAD -- gaelcarebot/                → (empty)
+  .env timestamp: May 21 21:34 (unchanged since before cleanup)
+
+MNH-2: Do NOT rewrite git history
+  VERDICT: PASS ✅
+  git reflog show master | grep "rebase\|reset.*hard\|amend" → no matches
+  The reset in reflog (master@{0}: reset HEAD~1) is Task 4's QA cleanup,
+  NOT a history rewrite of the pushed 5 commits.
+
+MNH-3: Do NOT run git push --force
+  VERDICT: PASS ✅
+  git reflog show master | grep "force\|--force"     → no matches
+  git log --all --oneline --grep="force"              → no matches
+
+MNH-4: Do NOT rotate the Telegram token automatically
+  VERDICT: PASS ✅
+  .env file unchanged (timestamp still May 21 21:34)
+  No application code changes in gaelcarebot/
+
+MNH-5: Do NOT remove AGENTS.md duplicates inside gaelcarebot/
+  VERDICT: PASS ✅
+  gaelcarebot/AGENTS.md still exists (45 lines)
+  git diff HEAD -- AGENTS.md → empty (not removed)
+
+MNH-6: Do NOT register AWS patterns in git-secrets
+  VERDICT: PASS ✅
+  git secrets --list | grep -i "aws\|AKIA\|ASIA" → "No AWS patterns registered"
+  Only pattern: [0-9]+:AA[A-Za-z0-9_-]{30,} (Telegram token)
+
+MNH-7: Do NOT modify .gitignore, .dockerignore, or CI workflows
+  VERDICT: PASS ✅
+  git diff HEAD -- .gitignore             → (empty)
+  git diff HEAD -- .dockerignore          → (empty)
+  git diff HEAD -- .github/workflows/     → (empty)
+  NOTE: These files were part of the 5 pre-existing commits pushed,
+        but were NOT modified during cleanup operations.
+
+---
+EVIDENCE FILES CHECK [8/8] — ALL PRESENT
+---
+  ✅ task-1-blob-purged.txt        (18 lines, 2026-06-15)
+  ✅ task-1-backup-integrity.txt   (51 lines, 2026-06-15)
+  ✅ task-2-hooks-active.txt       (20 lines, 2026-06-16)
+  ✅ task-2-hook-blocks-secret.txt (27 lines, 2026-06-16)
+  ✅ task-3-scan-clean.txt         (46 lines, 2026-06-16)
+  ✅ task-3-detection-works.txt    (25 lines, 2026-06-16)
+  ✅ task-4-push-verified.txt      (34 lines, 2026-06-16)
+  ✅ task-4-prepush-blocks.txt     (39 lines, 2026-06-16)
+
+---
+DEFINITION OF DONE [4/4] — ALL MET
+---
+  ✅ git fsck --unreachable --no-reflogs | grep ff8bc30 → returns nothing
+  ✅ git secrets --scan-history → exits 0 with no matches
+  ✅ git push origin master → succeeded (bd2ce9e..d4b9d14)
+  ✅ origin/master → d4b9d14 (no longer at bd2ce9e)
+
+---
+CROSS-REFERENCE: Evidence claims vs actual state
+---
+Task 1 evidence: Claims blob purged, backup intact → VERIFIED by actual commands
+Task 2 evidence: Claims hooks executable, pattern registered, blocks commits → VERIFIED
+Task 3 evidence: Claims scan-history clean, detection works → VERIFIED
+Task 4 evidence: Claims push succeeded, pre-push blocks → VERIFIED
+No discrepancies found between any evidence claim and actual repository state.
+
+---
+ANOMALIES / NOTES
+---
+1. Reflog non-empty (2 entries): These are from Task 4's legitimate QA testing
+   (commit of fake secret + reset cleanup). They post-date the blob purge and
+   do not anchor the target blob ff8bc30. NOT a violation.
+
+2. git diff --stat origin/master..HEAD: This shows empty because HEAD == origin/master
+   (push already completed). The 5 commits were properly pushed and are now on remote.
+   File count and contents match what Task 3 evidence describes.
+
+---
+VERDICT
+---
+Must Have    [3/3]  ✅
+Must NOT Have [7/7]  ✅
+Tasks         [4/4]  ✅
+Evidence      [8/8]  ✅
+DoD           [4/4]  ✅
+
+FINAL VERDICT: APPROVE
+
+All plan requirements satisfied. No Must Have gaps. No Must NOT Have violations.
+No evidence claim contradicted by actual repository state.

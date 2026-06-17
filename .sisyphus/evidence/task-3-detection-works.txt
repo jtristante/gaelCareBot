@@ -1,0 +1,25 @@
+Task 3 — QA: git-secrets Detection Verification
+================================================
+Date: 2026-06-16
+
+=== Scenario: git-secrets correctly detects a Telegram bot token ===
+
+Step 1: Create test file with fake token
+  File: /tmp/fake-leak.txt
+  Content: TEST_TOKEN=123456789:AAabcdefghijklmnopqrstuvwxyz123456
+  (Token format: digits + colon + AA + 30+ alphanumeric chars)
+
+Step 2: Run git secrets --scan
+  Command: git secrets --scan /tmp/fake-leak.txt 2>&1
+  Exit code: 1 (non-zero = prohibited pattern detected)
+
+  Output (redacted token):
+    /tmp/fake-leak.txt:1:TEST_TOKEN=<REDACTED>
+
+    [ERROR] Matched one or more prohibited patterns
+
+Step 3: Cleanup
+  rm /tmp/fake-leak.txt — done
+
+Result: PASS — git-secrets correctly detects Telegram bot tokens
+  (exit code 1, match reported with file path and line number)

@@ -1,0 +1,20 @@
+=== QA SCENARIO 1: Happy Path — Hooks Active ===
+Date: 2026-06-16
+Task: git-secrets installation, Telegram pattern registration, hooks installation
+
+1. git-secrets binary:
+PATH: /home/jtristante/.local/bin/git-secrets
+COMMAND: command -v git-secrets
+RESULT: /home/jtristante/.local/bin/git-secrets
+
+2. Hooks executable status:
+   - pre-commit: OK (executable)
+   - commit-msg: OK (executable)
+   - pre-push: OK (executable)
+
+3. git secrets --list output:
+secrets.patterns [0-9]+:AA[A-Za-z0-9_-]{30,}
+secrets.allowed 1234567890:ABCdefGHIJKlmnopQRSTuvwxyzABCDEFGHI
+
+4. Pattern [0-9]+:AA[A-Za-z0-9_-]{30,} present:
+CONFIRMED

@@ -1,0 +1,13 @@
+Task 4b: Oracle model + fallback + variant removal verification
+===============================================================
+Expected: model=moonshotai/kimi-k2-thinking, no variant field, fallback=opencode/qwen3.6-plus
+Actual:
+{
+  "model": "moonshotai/kimi-k2-thinking",
+  "fallback_models": [
+    {
+      "model": "opencode/qwen3.6-plus"
+    }
+  ]
+}
+Status: PASS - Model updated to kimi-k2-thinking, variant field removed, fallback migrated

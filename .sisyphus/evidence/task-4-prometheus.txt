@@ -1,0 +1,13 @@
+Task 4c: Prometheus model + fallback verification
+=================================================
+Expected: model=deepseek/deepseek-v4-pro, fallback=deepseek/deepseek-v4-flash
+Actual:
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+Status: PASS - Model updated to deepseek-v4-pro, fallback unchanged

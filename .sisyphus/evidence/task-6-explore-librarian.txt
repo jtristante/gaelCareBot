@@ -1,0 +1,22 @@
+Task 4f/4g: Explore + Librarian model check (should be unchanged)
+=================================================================
+Expected: Both with model=opencode/deepseek-v4-flash-free, fallback=deepseek/deepseek-v4-flash
+Actual - Explore:
+{
+  "model": "opencode/deepseek-v4-flash-free",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+Actual - Librarian:
+{
+  "model": "opencode/deepseek-v4-flash-free",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+Status: PASS - Both unchanged and correct

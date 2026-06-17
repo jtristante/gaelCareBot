@@ -1,0 +1,2 @@
+src/db.py:73:        """Migrate schema: rename deleted_at→consumed_at, add consumed_at if missing, migrate SALIDAs."""
+src/db.py:76:                "ALTER TABLE transactions RENAME COLUMN deleted_at TO consumed_at"

@@ -7,3 +7,31 @@ services:
       - ./data:/data
     env_file:
       - .env
+
+  sqlite-web:
+    image: coleifer/sqlite-web:latest
+    container_name: gaelcarebot-sqlite-web
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:${SQLITE_WEB_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      - SQLITE_WEB_PASSWORD=${SQLITE_WEB_PASSWORD}
+    user: "1000:1000"
+    depends_on:
+      - gaelcarebot
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; exit(0 if u.urlopen('http://localhost:8080/').status == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    command: sqlite_web -H 0.0.0.0 -p 8080 /data/milk.db -P -x

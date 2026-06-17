@@ -1,0 +1,13 @@
+Task 4a: Sisyphus model + fallback verification
+===============================================
+Expected: model=opencode/nemotron-3-super-free, fallback=deepseek/deepseek-v4-flash
+Actual:
+{
+  "model": "opencode/nemotron-3-super-free",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+Status: PASS - Model updated to nemotron-3-super-free, fallback unchanged

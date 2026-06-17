@@ -1,0 +1,2 @@
+FRESH DB MIGRATION: add_at present, fecha_hora absent
+PASS: Fresh DB migration works

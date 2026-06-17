@@ -1,0 +1,12 @@
+CREATED BY                                      SIZE
+CMD ["python" "-m" "gaelcarebot.bot"]           0B
+HEALTHCHECK {Test:[CMD-SHELL pgrep -f "pytho…   0B
+VOLUME [/data]                                  0B
+USER appuser                                    0B
+RUN /bin/sh -c mkdir -p /data && chown appus…   8.19kB
+COPY gaelcarebot/ gaelcarebot/ # buildkit       279kB
+RUN /bin/sh -c pip install --no-cache-dir . …   28.6MB
+COPY gaelcarebot/__init__.py gaelcarebot/__i…   16.4kB
+COPY pyproject.toml . # buildkit                12.3kB
+WORKDIR /app                                    8.19kB
+RUN /bin/sh -c useradd --create-home appuser…   69.6kB

@@ -1,0 +1,2 @@
+All integration checks passed.
+deleted_at in src/: 2 (both necessary: docstring + RENAME COLUMN SQL)

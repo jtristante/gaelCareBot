@@ -1,0 +1,5 @@
+python-telegram-bot>=20.0,<21.0
+pytest>=8.0
+pytest-asyncio
+pytz
+--- DRY RUN OK ---

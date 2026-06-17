@@ -1,0 +1,3 @@
+✓ FIFO order: ids 1 and 2 consumed, id=3 untouched
+✓ Stock = 200
+ALL QA SCENARIOS PASSED

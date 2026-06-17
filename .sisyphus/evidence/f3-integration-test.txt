@@ -1,0 +1,21 @@
+=== Integration Test: TABLE_HEADER + Stock Table ===
+
+TABLE_HEADER: '<b>🗓️ Historial de stock</b>\n\n<pre>ID  Fecha        Tipo     Cantidad  Responsable  Notas</pre>'
+
+Generated full message:
+<b>🗓️ Historial de stock</b>
+
+<pre>Cantidad │   Fecha/Hora   │ Usuario             
+─────────┼────────────────┼─────────────────────
+   200ml │  21/05 10:30   │ test_user           </pre>
+
+Checks:
+  [PASS] Title contains HTML bold
+  [PASS] Contains <pre> opening tag
+  [PASS] Contains </pre> closing tag
+  [PASS] Header row contains Cantidad
+  [PASS] Header row contains Fecha/Hora
+  [PASS] Header row contains Usuario
+  [PASS] Uses box-drawing character for columns
+
+OVERALL: PASS

@@ -1,0 +1,1 @@
+PASS: start.py uses parse_mode="HTML"

@@ -1,0 +1,21 @@
+Task 3: Add kimi-k2-thinking to moonshot provider
+==================================================
+
+1. Edit applied: ~/.config/opencode/opencode.json
+   Added "kimi-k2-thinking" entry alongside "kimi-k2" under provider.moonshot.models
+
+2. JSON validation: PASS (via jq .)
+
+3. opencode models verification:
+   $ opencode models | grep moonshotai/kimi-k2-thinking
+   moonshotai/kimi-k2-thinking
+   moonshotai/kimi-k2-thinking-turbo
+
+4. Config snippet:
+   "kimi-k2-thinking": {
+     "name": "Kimi K2 Thinking",
+     "limit": { "context": 128000, "output": 16384 },
+     "modalities": { "input": ["text", "image"], "output": ["text"] }
+   }
+
+Status: ✅ COMPLETED

@@ -1,0 +1,1 @@
+PASS: No Markdown parse_mode found in any handlers

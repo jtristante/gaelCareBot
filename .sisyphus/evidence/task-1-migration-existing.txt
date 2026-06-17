@@ -1,0 +1,2 @@
+EXISTING DB: fecha_hora renamed to add_at, data preserved
+PASS: Existing DB migration preserves data

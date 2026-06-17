@@ -1,0 +1,84 @@
+ src/db.py                | 8 ++++----
+ src/handlers/consumir.py | 2 +-
+ src/handlers/editar.py   | 2 +-
+ tests/test_editar.py     | 2 +-
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+diff --git a/src/db.py b/src/db.py
+index 3a7f451..22a08fb 100644
+--- a/src/db.py
++++ b/src/db.py
+@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS transactions (
+     user_id INTEGER NOT NULL,
+     username TEXT,
+     notas TEXT,
+-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
++    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', 'now')),
+     consumed_at TEXT DEFAULT NULL
+ )
+ """
+@@ -219,7 +219,7 @@ class MilkDatabase:
+     def delete_entry(self, entry_id: int) -> bool:
+         """Soft delete an entry by id. Returns True if a row was soft-deleted."""
+         cur = self.conn.execute(
+-            "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ? AND consumed_at IS NULL",
++            "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ? AND consumed_at IS NULL",
+             (entry_id,)
+         )
+         self.conn.commit()
+@@ -271,7 +271,7 @@ class MilkDatabase:
+             entry_id = row[0]
+             entry_cantidad = row[1]
+             self.conn.execute(
+-                "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
++                "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
+                 (entry_id,)
+             )
+             cumulative += entry_cantidad
+@@ -280,7 +280,7 @@ class MilkDatabase:
+ 
+         cur = self.conn.execute(
+             """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, consumed_at)
+-               VALUES (?, ?, ?, ?, ?, ?, datetime('now'))""",
++               VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%S', 'now'))""",
+             ("SALIDA", cantidad, add_at, user_id, username, notas),
+         )
+         self.conn.commit()
+diff --git a/src/handlers/consumir.py b/src/handlers/consumir.py
+index 9487c4f..00b2a8b 100644
+--- a/src/handlers/consumir.py
++++ b/src/handlers/consumir.py
+@@ -335,7 +335,7 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
+         if success:
+             # Also set consumed_at to now() for the entry
+             db.conn.execute(
+-                "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
++                "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
+                 (entry_id,)
+             )
+             db.conn.commit()
+diff --git a/src/handlers/editar.py b/src/handlers/editar.py
+index c897b4c..dde2972 100644
+--- a/src/handlers/editar.py
++++ b/src/handlers/editar.py
+@@ -370,7 +370,7 @@ async def confirm_edit(update: Update, context: Any) -> int:
+             original_tipo = original_entry.get("tipo", "")
+             if original_tipo == "ENTRADA" and new_value == "SALIDA":
+                 db.conn.execute(
+-                    "UPDATE transactions SET consumed_at = datetime('now') WHERE id = ?",
++                    "UPDATE transactions SET consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') WHERE id = ?",
+                     (entry_id,)
+                 )
+                 db.conn.commit()
+diff --git a/tests/test_editar.py b/tests/test_editar.py
+index 5113343..ba28b4f 100644
+--- a/tests/test_editar.py
++++ b/tests/test_editar.py
+@@ -595,7 +595,7 @@ class TestEditarModifyTipo:
+         # Verify consumed_at was set
+         mock_db.conn.execute.assert_called_once()
+         call_args = mock_db.conn.execute.call_args
+-        assert "consumed_at = datetime('now')" in call_args[0][0]
++        assert "consumed_at = strftime('%Y-%m-%dT%H:%M:%S', 'now')" in call_args[0][0]
+         mock_db.conn.commit.assert_called_once()
+         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
+         assert result == -1  # ConversationHandler.END

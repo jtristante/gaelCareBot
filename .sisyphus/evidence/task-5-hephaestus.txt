@@ -1,0 +1,14 @@
+Task 5d: Hephaestus agent existence + allow_non_gpt_model + fallback verification
+=================================================================================
+Expected: Agent exists with model=opencode/qwen3.6-plus, fallback=deepseek/deepseek-v4-flash, allow_non_gpt_model=true
+Actual:
+{
+  "model": "opencode/qwen3.6-plus",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ],
+  "allow_non_gpt_model": true
+}
+Status: PASS - Hephaestus added after explore with correct model, fallback, and allow_non_gpt_model

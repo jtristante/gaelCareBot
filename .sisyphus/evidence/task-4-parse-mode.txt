@@ -1,0 +1,5 @@
+=== help.py ===
+23:    await update.message.reply_text(HELP_MSG, parse_mode="HTML")
+
+=== handlers with Markdown parse_mode ===
+(empty=all migrated)

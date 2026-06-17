@@ -1,0 +1,112 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/jtristante/Projects/GaelCareBot
+configfile: pytest.ini
+plugins: anyio-4.13.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 22 items / 18 deselected / 4 selected
+
+tests/test_editar.py::TestEditarModifyTipo::test_editar_tipo_salida_to_entrada PASSED [ 25%]
+tests/test_editar.py::TestEditTipoIntegration::test_edit_entrada_to_salida_to_entrada_roundtrip FAILED [ 50%]
+tests/test_editar.py::TestEditTipoIntegration::test_edit_roundtrip_preserves_stock FAILED [ 75%]
+tests/test_editar.py::TestEditTipoIntegration::test_edit_salida_to_entrada_when_consumed_at_set FAILED [100%]
+
+=================================== FAILURES ===================================
+___ TestEditTipoIntegration.test_edit_entrada_to_salida_to_entrada_roundtrip ___
+
+self = <tests.test_editar.TestEditTipoIntegration object at 0x7b5490c05df0>
+
+    def test_edit_entrada_to_salida_to_entrada_roundtrip(self) -> None:
+        """ENTRADA→SALIDA→ENTRADA round-trip fails due to consumed_at guard.
+    
+        RED: must FAIL because update_entry's WHERE consumed_at IS NULL
+        prevents SALIDA→ENTRADA conversion, leaving the entry as SALIDA
+        with consumed_at still set.
+        """
+        db = MilkDatabase(":memory:")
+        db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
+    
+        db.update_entry(1, tipo="SALIDA")
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            (now_madrid(), 1),
+        )
+        db.conn.commit()
+    
+        db.update_entry(1, tipo="ENTRADA")
+    
+        entry = db.get_entry(1, include_consumed=True)
+>       assert entry["consumed_at"] is None
+E       AssertionError: assert '2026-06-17T09:39:30' is None
+
+tests/test_editar.py:691: AssertionError
+_________ TestEditTipoIntegration.test_edit_roundtrip_preserves_stock __________
+
+self = <tests.test_editar.TestEditTipoIntegration object at 0x7b5490c053a0>
+
+    def test_edit_roundtrip_preserves_stock(self) -> None:
+        """Stock is NOT preserved after ENTRADA→SALIDA→ENTRADA round-trip.
+    
+        RED: must FAIL because converting back to ENTRADA fails silently,
+        so the entry remains a consumed SALIDA and is excluded from stock
+        calculations — stock drops from 200 to 0.
+        """
+        db = MilkDatabase(":memory:")
+        db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
+        initial_stock = db.get_total_stock()
+    
+        db.update_entry(1, tipo="SALIDA")
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            (now_madrid(), 1),
+        )
+        db.conn.commit()
+    
+        db.update_entry(1, tipo="ENTRADA")
+    
+>       assert db.get_total_stock() == initial_stock
+E       assert 0 == 200
+E        +  where 0 = get_total_stock()
+E        +    where get_total_stock = <gaelcarebot.db.MilkDatabase object at 0x7b5490c5d040>.get_total_stock
+
+tests/test_editar.py:714: AssertionError
+___ TestEditTipoIntegration.test_edit_salida_to_entrada_when_consumed_at_set ___
+
+self = <tests.test_editar.TestEditTipoIntegration object at 0x7b5490c05ac0>
+
+    def test_edit_salida_to_entrada_when_consumed_at_set(self) -> None:
+        """update_entry() returns False when consumed_at IS NOT NULL.
+    
+        RED: must FAIL because ``update_entry()`` has
+        ``WHERE consumed_at IS NULL`` which silently prevents any
+        update to entries with consumed_at set — even tipo changes
+        from SALIDA back to ENTRADA.
+        """
+        db = MilkDatabase(":memory:")
+        db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
+    
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = ?, tipo = ? WHERE id = ?",
+            (now_madrid(), "SALIDA", 1),
+        )
+        db.conn.commit()
+    
+        success = db.update_entry(1, tipo="ENTRADA")
+        entry = db.get_entry(1, include_consumed=True)
+    
+>       assert success is True
+E       assert False is True
+
+tests/test_editar.py:736: AssertionError
+=============================== warnings summary ===============================
+gaelcarebot/handlers/editar.py:423
+  /home/jtristante/Projects/GaelCareBot/gaelcarebot/handlers/editar.py:423: PTBUserWarning: If 'per_message=False', 'CallbackQueryHandler' will not be tracked for every message. Read this FAQ entry to learn more about the per_* settings: https://github.com/python-telegram-bot/python-telegram-bot/wiki/Frequently-Asked-Questions#what-do-the-per_-settings-in-conversationhandler-do.
+    editar_conv_handler = ConversationHandler(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_editar.py::TestEditTipoIntegration::test_edit_entrada_to_salida_to_entrada_roundtrip
+FAILED tests/test_editar.py::TestEditTipoIntegration::test_edit_roundtrip_preserves_stock
+FAILED tests/test_editar.py::TestEditTipoIntegration::test_edit_salida_to_entrada_when_consumed_at_set
+============ 3 failed, 1 passed, 18 deselected, 1 warning in 0.48s =============

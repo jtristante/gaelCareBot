@@ -1,0 +1,7 @@
+Test count collected: 2026-05-21
+Command: .venv/bin/python -m pytest --collect-only
+Working directory: /home/jtristante/Projects/GaelCareBot
+
+========================= 77 tests collected in 0.38s ==========================
+
+Total tests: 77

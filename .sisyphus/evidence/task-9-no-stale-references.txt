@@ -1,0 +1,6 @@
+Task 9: Check for stale kimi-k2 references in oh-my-openagent.json
+====================================================================
+Command: python3 -c "import json, re; c=json.load(open('~/.config/opencode/oh-my-openagent.json')); m=re.findall(r'kimi-k2(?!\.5|-)', json.dumps(c)); print(f'Stale refs: {len(m)}')"
+
+Result: Stale refs: 0
+All references already use 'kimi-k2-thinking' or 'kimi-k2.5' (not bare 'kimi-k2')

@@ -1,0 +1,8 @@
+RED Phase Confirmed - Task 3
+=============================
+Timestamp: 2026-05-23
+
+Tests for interactive flow also fail at import time (same ImportError for
+agregar_start, receive_amount, confirm_add, cancel, CONFIRMING, WAITING_AMOUNT).
+
+All 16 tests (6 inline + 10 interactive) will resolve once Task 4 creates the handler.

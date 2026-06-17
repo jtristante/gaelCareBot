@@ -1,0 +1,51 @@
+=== QA Scenario 2: Backup Integrity ===
+Verified: 2026-06-15T23:53:21Z
+
+--- diff .git/objects vs backup (differences expected) ---
+Sólo en .git.backup-pre-cleanup/objects: 00
+Sólo en .git.backup-pre-cleanup/objects: 01
+Sólo en .git.backup-pre-cleanup/objects: 02
+Sólo en .git.backup-pre-cleanup/objects: 03
+Sólo en .git.backup-pre-cleanup/objects: 05
+Sólo en .git.backup-pre-cleanup/objects: 06
+Sólo en .git.backup-pre-cleanup/objects: 0a
+Sólo en .git.backup-pre-cleanup/objects: 0b
+Sólo en .git.backup-pre-cleanup/objects: 0c
+Sólo en .git.backup-pre-cleanup/objects: 0f
+Sólo en .git.backup-pre-cleanup/objects: 11
+Sólo en .git.backup-pre-cleanup/objects: 12
+Sólo en .git.backup-pre-cleanup/objects: 13
+Sólo en .git.backup-pre-cleanup/objects: 14
+Sólo en .git.backup-pre-cleanup/objects: 15
+Sólo en .git.backup-pre-cleanup/objects: 17
+Sólo en .git.backup-pre-cleanup/objects: 18
+Sólo en .git.backup-pre-cleanup/objects: 1a
+Sólo en .git.backup-pre-cleanup/objects: 1b
+Sólo en .git.backup-pre-cleanup/objects: 1c
+
+--- backup fsck (ff8bc30 SHOULD exist) ---
+inalcanzable commit 4b14b8e2f6feb693297de50a2cc3cc66218ccf46
+inalcanzable commit 955036f4abe9be2709f0c915a8d8bceca41337e8
+inalcanzable commit a76ce9b66c6fad1ed118b4ff97d9516b5ae258ef
+inalcanzable commit dbc4ad0dec4513ad479a8aa41337bece3b301ba2
+inalcanzable commit b6fd94558293528eae6e2fb2c120e6d40b75b79b
+inalcanzable commit 15921e888288f23438fcc6746ef823fa3b329d4f
+inalcanzable commit 2b46d4b40c66e0fefd38157fc02dcad1ac8bd702
+inalcanzable tree 6c02cbb39ce141f54782164c8f735566db68a4a0
+inalcanzable tree 13275605d3566ef9aa3392393929e23cca35f755
+inalcanzable commit 757b7b29f1bab70c5ed6be1eaf5ee88e8cf80b90
+inalcanzable commit 95872bc52efc87da007b8283932b5fea9c674031
+inalcanzable commit f2b354addee2440d3261f57b171b60c7d7f4be22
+inalcanzable blob ff8bc30685c7debd36ab8a8776201a0fa13ffbb3
+
+--- grep backup for ff8bc30 ---
+inalcanzable blob ff8bc30685c7debd36ab8a8776201a0fa13ffbb3
+
+--- backup log --oneline -5 ---
+d4b9d14 chore: add anti-pattern for example values in documentation
+3f472da docs: add VPS self-hosted runner setup guide
+78f62c1 ci: add CI (test+build+push) and deploy (self-hosted runner) workflows
+1b30b25 perf: optimize Dockerfile with separate dependency layer and add HEALTHCHECK
+035a7e2 feat: add production docker-compose config, .dockerignore, and update project URL
+
+=== BACKUP INTEGRITY CHECK COMPLETE ===

@@ -1,0 +1,43 @@
+======================================================================
+F3 REAL MANUAL QA - FINAL VERDICT REPORT
+======================================================================
+
+SCENARIO EXECUTION SUMMARY
+----------------------------------------------------------------------
+  [PASS] T1-QA1: No backticks in TABLE_HEADER
+  [PASS] T1-QA2: No Markdown bold in HELP_MSG
+  [PASS] T1-QA3: HTML bold in HELP_MSG
+  [PASS] T2-QA1: Three columns header
+  [PASS] T2-QA2: HTML escaping
+  [PASS] T2-QA3: Empty state
+  [PASS] T2-QA4: Pre tags
+  [PASS] T2-QA5: HTML parse mode
+  [PASS] T3-QA1: Message integrity (HTML tags)
+  [PASS] T3-QA2: start.py parse_mode HTML
+  [PASS] T4-QA1: help.py parse_mode HTML
+  [PASS] T4-QA2: No Markdown left in handlers
+
+INTEGRATION TESTS
+----------------------------------------------------------------------
+  [PASS] TABLE_HEADER + stock table composition
+
+EDGE CASE TESTS
+----------------------------------------------------------------------
+  [PASS] Empty database
+  [PASS] XSS in username
+  [PASS] 50+ entries (truncation)
+
+======================================================================
+FINAL VERDICT
+======================================================================
+
+Scenarios: 15/15 PASS
+Integration: 1/1 PASS
+Edge Cases: 3/3 PASS
+
+VERDICT: APPROVE
+
+Evidence files saved to:
+  .sisyphus/evidence/f3-*.txt
+
+======================================================================

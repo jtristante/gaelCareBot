@@ -1,0 +1,116 @@
+========================================================
+TASK 8: Agent Assignment Verification
+Date: jue 21 may 2026 17:54:16 CEST
+========================================================
+
+--- Checking oh-my-openagent.json exists ---
+-rw-rw-r-- 1 jtristante jtristante 3257 may 21 17:51 /home/jtristante/.config/opencode/oh-my-openagent.json
+
+
+========================================================
+1. SISYPHUS
+========================================================
+{
+  "model": "opencode/nemotron-3-super-free",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+
+========================================================
+2. ORACLE
+========================================================
+{
+  "model": "moonshotai/kimi-k2-thinking",
+  "fallback_models": [
+    {
+      "model": "opencode/qwen3.6-plus"
+    }
+  ]
+}
+
+========================================================
+3. PROMETHEUS
+========================================================
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+
+========================================================
+4. HEPHAESTUS
+========================================================
+{
+  "model": "opencode/qwen3.6-plus",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ],
+  "allow_non_gpt_model": true
+}
+
+========================================================
+5. MOMUS
+========================================================
+{
+  "model": "moonshotai/kimi-k2.5",
+  "fallback_models": [
+    {
+      "model": "opencode/qwen3.6-plus"
+    }
+  ]
+}
+
+========================================================
+6. EXPLORE
+========================================================
+{
+  "model": "opencode/deepseek-v4-flash-free",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+
+========================================================
+7. LIBRARIAN
+========================================================
+{
+  "model": "opencode/deepseek-v4-flash-free",
+  "fallback_models": [
+    {
+      "model": "deepseek/deepseek-v4-flash"
+    }
+  ]
+}
+
+========================================================
+5b. MOMUS (variant check)
+========================================================
+high
+
+========================================================
+8. UNMODIFIED AGENTS CHECK
+========================================================
+multimodal-looker: ✓ EXISTS
+metis: ✓ EXISTS
+atlas: ✓ EXISTS
+sisyphus-junior: ✓ EXISTS
+
+========================================================
+9. _old BACKUPS
+========================================================
+-rw-rw-r-- 1 jtristante jtristante 3141 may 21 17:49 /home/jtristante/.config/opencode/oh-my-openagent.json_old
+-rw-rw-r-- 1 jtristante jtristante 1118 may 21 17:49 /home/jtristante/.config/opencode/opencode.json_old
+
+========================================================
+VERIFICATION COMPLETE
+========================================================

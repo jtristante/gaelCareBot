@@ -1,0 +1,20 @@
+Task 2: Add deepseek-v4-pro to deepseek provider
+=================================================
+
+1. Edit applied: ~/.config/opencode/opencode.json
+   Added "deepseek-v4-pro" entry alongside "deepseek-v4-flash" under provider.deepseek.models
+
+2. JSON validation: PASS (via jq .)
+
+3. opencode models verification:
+   $ opencode models | grep deepseek/deepseek-v4-pro
+   deepseek/deepseek-v4-pro
+
+4. Config snippet:
+   "deepseek-v4-pro": {
+     "name": "DeepSeek V4 Pro",
+     "limit": { "context": 1000000, "output": 8192 },
+     "modalities": { "input": ["text"], "output": ["text"] }
+   }
+
+Status: ✅ COMPLETED

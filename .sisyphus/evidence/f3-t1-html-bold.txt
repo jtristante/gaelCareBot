@@ -1,0 +1,1 @@
+PASS: HTML bold in HELP_MSG

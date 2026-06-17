@@ -1,0 +1,9 @@
+Task 9: Validate final JSON
+=============================
+Command: jq . ~/.config/opencode/opencode.json > /dev/null && echo "JSON is valid"
+
+Result: JSON is valid.
+
+Providers configured: deepseek, google, moonshot
+Moonshot models remaining: kimi-k2-thinking
+(Moonshot provider has exactly 1 model: kimi-k2-thinking)

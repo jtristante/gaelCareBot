@@ -1,0 +1,32 @@
+=== gaelcarebot unchanged check ===
+Changed lines in gaelcarebot:
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 7916a65..6dbb913 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -7,3 +7,31 @@ services:
+       - ./data:/data
+     env_file:
+       - .env
++
++  sqlite-web:
++    image: coleifer/sqlite-web:latest
++    container_name: gaelcarebot-sqlite-web
++    restart: unless-stopped
++    volumes:
++      - ./data:/data
++    ports:
++      - "127.0.0.1:${SQLITE_WEB_PORT:-8080}:8080"
++    env_file:
++      - .env
++    environment:
++      - SQLITE_WEB_PASSWORD=${SQLITE_WEB_PASSWORD}
++    user: "1000:1000"
++    depends_on:
++      - gaelcarebot
++    logging:
++      driver: "json-file"
++      options:
++        max-size: "10m"
++        max-file: "3"
++    healthcheck:

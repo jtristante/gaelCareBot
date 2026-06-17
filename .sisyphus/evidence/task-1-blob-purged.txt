@@ -1,0 +1,18 @@
+=== QA Scenario 1: Happy Path ===
+Verified: 2026-06-15T23:53:16Z
+
+--- fsck --unreachable --no-reflogs ---
+
+--- grep for ff8bc30 ---
+PASS: No match for ff8bc30
+
+--- reflog show master ---
+
+--- log --oneline -5 ---
+d4b9d14 chore: add anti-pattern for example values in documentation
+3f472da docs: add VPS self-hosted runner setup guide
+78f62c1 ci: add CI (test+build+push) and deploy (self-hosted runner) workflows
+1b30b25 perf: optimize Dockerfile with separate dependency layer and add HEALTHCHECK
+035a7e2 feat: add production docker-compose config, .dockerignore, and update project URL
+
+=== ALL CHECKS PASSED ===
