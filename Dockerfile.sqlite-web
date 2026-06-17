@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 RUN pip install --no-cache-dir sqlite-web==0.7.2
 
-RUN useradd --create-home appuser
+RUN useradd --create-home --uid 1000 appuser && mkdir -p /data && chown appuser:appuser /data
 USER appuser
 
 EXPOSE 8080
