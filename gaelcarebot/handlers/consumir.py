@@ -49,7 +49,7 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
 
     # Get all entries, then filter for ENTRADA only (not consumed)
     all_entries = db.get_all_entries(order_by="add_at DESC", include_consumed=False)
-    entrada_entries = [e for e in all_entries if e["tipo"] == "ENTRADA"]
+    entrada_entries = [e for e in all_entries if e["entry_type"] == "ENTRADA"]
 
     if not entrada_entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
@@ -59,8 +59,8 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
     keyboard = []
     for entry in entrada_entries:
         # Format: ID - Fecha - Cantidad
-        fecha = entry["add_at"][:10] if entry["add_at"] else "N/A"
-        label = f"#{entry['id']} [ENTRADA] {fecha} - {entry['cantidad']}ml"
+        fecha = entry["event_date"][:10] if entry["event_date"] else "N/A"
+        label = f"#{entry['id']} [ENTRADA] {fecha} - {entry['amount']}ml"
         keyboard.append([InlineKeyboardButton(label, callback_data=f"reverse_{entry['id']}")])
 
     # Add cancel button
@@ -102,7 +102,7 @@ async def entry_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
         return ConversationHandler.END
 
-    if entry["tipo"] != "ENTRADA":
+    if entry["entry_type"] != "ENTRADA":
         await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
         return ConversationHandler.END
 
@@ -110,13 +110,13 @@ async def entry_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     context.user_data["reverse_entry_id"] = entry_id
 
     # Build entry info for confirmation message
-    fecha = entry["add_at"][:10] if entry["add_at"] else "N/A"
+    fecha = entry["event_date"][:10] if entry["event_date"] else "N/A"
     entry_info = (
         f"ID: #{entry_id}\n"
-        f"Tipo: {entry['tipo']}\n"
-        f"Cantidad: {entry['cantidad']}ml\n"
+        f"Tipo: {entry['entry_type']}\n"
+        f"Cantidad: {entry['amount']}ml\n"
         f"Fecha: {fecha}\n"
-        f"Notas: {entry.get('notas') or 'Ninguna'}"
+        f"Notas: {entry.get('notes') or 'Ninguna'}"
     )
 
     # Show confirmation keyboard
@@ -164,23 +164,23 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
         _clear_reversal_data(context)
         return ConversationHandler.END
-    cantidad = entry["cantidad"]
-    add_at_raw = entry.get("add_at", "")
+    cantidad = entry["amount"]
+    event_date_raw = entry.get("event_date", "")
 
     try:
         # Change tipo to SALIDA
-        success = db.update_entry(entry_id, tipo="SALIDA")
+        success = db.update_entry(entry_id, entry_type="SALIDA")
 
         if success:
             # Also set consumed_at to now() for the entry
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id)
             )
             db.conn.commit()
 
-            if add_at_raw:
-                fecha_parts = add_at_raw[:10].split("-")
+            if event_date_raw:
+                fecha_parts = event_date_raw[:10].split("-")
                 formatted_date = f"{fecha_parts[2]}/{fecha_parts[1]}/{fecha_parts[0]}"
             else:
                 formatted_date = "N/A"

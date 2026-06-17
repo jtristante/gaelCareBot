@@ -15,20 +15,20 @@ def now_madrid() -> str:
     return datetime.now(MADRID_TZ).strftime("%Y-%m-%dT%H:%M:%S")
 
 _VALID_COLUMNS = frozenset(
-    {"tipo", "cantidad", "add_at", "user_id", "username", "notas"}
+    {"entry_type", "amount", "event_date", "user_id", "username", "notes"}
 )
 
-_VALID_TIPOS = frozenset({"ENTRADA", "SALIDA"})
+_VALID_ENTRY_TYPES = frozenset({"ENTRADA", "SALIDA"})
 
 _TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS transactions (
+CREATE TABLE IF NOT EXISTS milk_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tipo TEXT NOT NULL CHECK(tipo IN ('ENTRADA', 'SALIDA')),
-    cantidad INTEGER NOT NULL CHECK(cantidad > 0),
-    add_at TEXT NOT NULL,
+    entry_type TEXT NOT NULL CHECK(entry_type IN ('ENTRADA', 'SALIDA')),
+    amount INTEGER NOT NULL CHECK(amount > 0),
+    event_date TEXT NOT NULL,
     user_id INTEGER NOT NULL,
     username TEXT,
-    notas TEXT,
+    notes TEXT,
             created_at TEXT NOT NULL,
     consumed_at TEXT DEFAULT NULL
 )
@@ -70,7 +70,7 @@ class MilkDatabase:
         self._migrate_schema()
 
     def _create_tables(self) -> None:
-        """Create the transactions table if it does not exist."""
+        """Create the milk_entries table if it does not exist."""
         self.conn.execute(_TABLE_SQL)
         self.conn.commit()
 
@@ -91,7 +91,7 @@ class MilkDatabase:
         except sqlite3.OperationalError:
             pass
         self.conn.execute(
-            "UPDATE transactions SET consumed_at = COALESCE(consumed_at, created_at) WHERE tipo = 'SALIDA'"
+            "UPDATE milk_entries SET consumed_at = COALESCE(consumed_at, created_at) WHERE entry_type = 'SALIDA'"
         )
         self.conn.commit()
         try:
@@ -103,10 +103,10 @@ class MilkDatabase:
             pass
 
     @staticmethod
-    def _validate_tipo(tipo: str) -> None:
-        if tipo not in _VALID_TIPOS:
+    def _validate_entry_type(entry_type: str) -> None:
+        if entry_type not in _VALID_ENTRY_TYPES:
             raise ValueError(
-                f"tipo must be one of {_VALID_TIPOS}, got {tipo!r}"
+                f"entry_type must be one of {_VALID_ENTRY_TYPES}, got {entry_type!r}"
             )
 
     # ------------------------------------------------------------------
@@ -115,22 +115,22 @@ class MilkDatabase:
 
     def add_entry(
         self,
-        tipo: str,
-        cantidad: int,
-        add_at: str,
+        entry_type: str,
+        amount: int,
+        event_date: str,
         user_id: int,
         username: Optional[str] = None,
-        notas: Optional[str] = None,
+        notes: Optional[str] = None,
     ) -> int:
         """Insert a new transaction and return its id."""
-        self._validate_tipo(tipo)
-        if notas is not None and len(notas) > 200:
-            raise ValueError("notas cannot exceed 200 characters")
+        self._validate_entry_type(entry_type)
+        if notes is not None and len(notes) > 200:
+            raise ValueError("notes cannot exceed 200 characters")
 
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, created_at)
+            """INSERT INTO milk_entries (entry_type, amount, event_date, user_id, username, notes, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (tipo, cantidad, add_at, user_id, username, notas, now_madrid()),
+            (entry_type, amount, event_date, user_id, username, notes, now_madrid()),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -142,7 +142,7 @@ class MilkDatabase:
             entry_id: The entry ID to look up.
             include_consumed: If True, return the entry even if consumed_at is set.
         """
-        sql = "SELECT * FROM transactions WHERE id = ?"
+        sql = "SELECT * FROM milk_entries WHERE id = ?"
         if not include_consumed:
             sql += " AND consumed_at IS NULL"
         cur = self.conn.execute(sql, (entry_id,))
@@ -150,7 +150,7 @@ class MilkDatabase:
         return dict_from_row(row)
 
     def get_all_entries(
-        self, order_by: str = "add_at DESC", include_consumed: bool = False
+        self, order_by: str = "event_date DESC", include_consumed: bool = False
     ) -> list[dict[str, Any]]:
         """Return all entries ordered by *order_by* (sanitised).
 
@@ -162,7 +162,7 @@ class MilkDatabase:
         if len(parts) not in (1, 2):
             raise ValueError(f"Invalid order_by: {order_by!r}")
         col = parts[0]
-        allowed_cols = {"id", "tipo", "cantidad", "add_at", "created_at"}
+        allowed_cols = {"id", "entry_type", "amount", "event_date", "created_at"}
         if col not in allowed_cols:
             raise ValueError(f"Invalid sort column: {col!r}")
         direction = parts[1].upper() if len(parts) == 2 else "DESC"
@@ -172,11 +172,11 @@ class MilkDatabase:
         safe_order = f"{col} {direction}"
         if include_consumed:
             cur = self.conn.execute(
-                f"SELECT * FROM transactions ORDER BY {safe_order}"
+                f"SELECT * FROM milk_entries ORDER BY {safe_order}"
             )
         else:
             cur = self.conn.execute(
-                f"SELECT * FROM transactions WHERE consumed_at IS NULL ORDER BY {safe_order}"
+                f"SELECT * FROM milk_entries WHERE consumed_at IS NULL ORDER BY {safe_order}"
             )
         return [dict_from_row(row) for row in cur.fetchall()]
 
@@ -194,11 +194,11 @@ class MilkDatabase:
         end = next_dt.strftime("%Y-%m-%dT00:00:00")
 
         cur = self.conn.execute(
-            """SELECT * FROM transactions
-               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ?)
-                  OR (tipo = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
-                  OR (tipo = 'SALIDA' AND consumed_at IS NULL AND add_at >= ? AND add_at < ?)
-               ORDER BY add_at DESC""",
+            """SELECT * FROM milk_entries
+               WHERE (entry_type = 'ENTRADA' AND event_date >= ? AND event_date < ?)
+                  OR (entry_type = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
+                  OR (entry_type = 'SALIDA' AND consumed_at IS NULL AND event_date >= ? AND event_date < ?)
+               ORDER BY event_date DESC""",
             (start, end, start, end, start, end),
         )
         entries = [dict_from_row(row) for row in cur.fetchall()]
@@ -208,12 +208,12 @@ class MilkDatabase:
         # summary shows both sides.
         synthetic = []
         for entry in entries:
-            if entry["tipo"] == "SALIDA" and entry.get("consumed_at"):
-                salida_add_date = entry["add_at"][:10] if entry["add_at"] else ""
+            if entry["entry_type"] == "SALIDA" and entry.get("consumed_at"):
+                salida_add_date = entry["event_date"][:10] if entry["event_date"] else ""
                 if salida_add_date == date:
-                    synthetic.append({**entry, "tipo": "ENTRADA"})
+                    synthetic.append({**entry, "entry_type": "ENTRADA"})
         entries.extend(synthetic)
-        entries.sort(key=lambda e: e["add_at"], reverse=True)
+        entries.sort(key=lambda e: e["event_date"], reverse=True)
         return entries
 
     def update_entry(self, entry_id: int, **kwargs: Any) -> bool:
@@ -224,28 +224,28 @@ class MilkDatabase:
             return False
 
         # Validate tipo if present
-        if "tipo" in updates:
-            self._validate_tipo(updates["tipo"])
+        if "entry_type" in updates:
+            self._validate_entry_type(updates["entry_type"])
         # Validate notas length if present
-        if "notas" in updates and updates["notas"] is not None and len(updates["notas"]) > 200:
-            raise ValueError("notas cannot exceed 200 characters")
+        if "notes" in updates and updates["notes"] is not None and len(updates["notes"]) > 200:
+            raise ValueError("notes cannot exceed 200 characters")
 
         set_clause = ", ".join(f"{col} = ?" for col in updates)
         values = list(updates.values()) + [entry_id]
 
         # Selective guard: restricted fields (affect stock/identity) require
         # consumed_at IS NULL; safe fields (metadata only) are always allowed.
-        restricted_fields = {"tipo", "cantidad", "user_id", "username"}
+        restricted_fields = {"entry_type", "amount", "user_id", "username"}
         has_restricted = any(field in updates for field in restricted_fields)
 
         if has_restricted:
             cur = self.conn.execute(
-                f"UPDATE transactions SET {set_clause} WHERE id = ? AND consumed_at IS NULL",
+                f"UPDATE milk_entries SET {set_clause} WHERE id = ? AND consumed_at IS NULL",
                 values,
             )
         else:
             cur = self.conn.execute(
-                f"UPDATE transactions SET {set_clause} WHERE id = ?",
+                f"UPDATE milk_entries SET {set_clause} WHERE id = ?",
                 values,
             )
         self.conn.commit()
@@ -254,7 +254,7 @@ class MilkDatabase:
     def delete_entry(self, entry_id: int) -> bool:
         """Soft delete an entry by id. Returns True if a row was soft-deleted."""
         cur = self.conn.execute(
-            "UPDATE transactions SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL",
+            "UPDATE milk_entries SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL",
             (now_madrid(), entry_id)
         )
         self.conn.commit()
@@ -262,22 +262,22 @@ class MilkDatabase:
 
     def consume_fifo(
         self,
-        cantidad: int,
-        add_at: str,
+        amount: int,
+        event_date: str,
         user_id: int,
         username: Optional[str] = None,
-        notas: Optional[str] = None,
+        notes: Optional[str] = None,
     ) -> int:
         """Consume stock using FIFO strategy.
 
-        1. Fetch ENTRADA entries WHERE consumed_at IS NULL ORDER BY add_at ASC, id ASC
-        2. Verify sum of available ENTRADAs >= cantidad (raise ValueError if insufficient)
-        3. Mark ENTRADA entries with consumed_at = now_madrid() in FIFO order until cumulative >= cantidad
+        1. Fetch ENTRADA entries WHERE consumed_at IS NULL ORDER BY event_date ASC, id ASC
+        2. Verify sum of available ENTRADAs >= amount (raise ValueError if insufficient)
+        3. Mark ENTRADA entries with consumed_at = now_madrid() in FIFO order until cumulative >= amount
         4. Create a new SALIDA entry recording the consumption
         5. Return the new SALIDA entry_id
 
         Args:
-            cantidad: Amount to consume (must be > 0)
+            amount: Amount to consume (must be > 0)
             add_at: ISO format datetime for the SALIDA entry
             user_id: User consuming the stock
             username: Optional username
@@ -289,35 +289,35 @@ class MilkDatabase:
         Raises:
             ValueError: If stock is insufficient
         """
-        if cantidad <= 0:
-            raise ValueError("cantidad must be positive")
+        if amount <= 0:
+            raise ValueError("amount must be positive")
 
         cur = self.conn.execute(
-            "SELECT id, cantidad FROM transactions WHERE tipo = 'ENTRADA' AND consumed_at IS NULL ORDER BY add_at ASC, id ASC"
+            "SELECT id, amount FROM milk_entries WHERE entry_type = 'ENTRADA' AND consumed_at IS NULL ORDER BY event_date ASC, id ASC"
         )
         entradas = cur.fetchall()
 
         available = sum(row[1] for row in entradas)
-        if available < cantidad:
-            raise ValueError(f"Insufficient stock: need {cantidad}, available {available}")
+        if available < amount:
+            raise ValueError(f"Insufficient stock: need {amount}, available {available}")
 
         cumulative = 0
         for row in entradas:
             entry_id = row[0]
             entry_cantidad = row[1]
             self.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id)
             )
             cumulative += entry_cantidad
-            if cumulative >= cantidad:
+            if cumulative >= amount:
                 break
 
         now_str = now_madrid()
         cur = self.conn.execute(
-            """INSERT INTO transactions (tipo, cantidad, add_at, user_id, username, notas, consumed_at, created_at)
+            """INSERT INTO milk_entries (entry_type, amount, event_date, user_id, username, notes, consumed_at, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("SALIDA", cantidad, add_at, user_id, username, notas, now_str, now_str),
+            ("SALIDA", amount, event_date, user_id, username, notes, now_str, now_str),
         )
         self.conn.commit()
         return cur.lastrowid
@@ -332,8 +332,8 @@ class MilkDatabase:
         if not confirm:
             raise ValueError("Must pass confirm=True to reset database")
 
-        cur = self.conn.execute("DELETE FROM transactions")
-        self.conn.execute("DELETE FROM sqlite_sequence WHERE name = 'transactions'")
+        cur = self.conn.execute("DELETE FROM milk_entries")
+        self.conn.execute("DELETE FROM sqlite_sequence WHERE name = 'milk_entries'")
         self.conn.commit()
         return cur.rowcount
 
@@ -345,9 +345,9 @@ class MilkDatabase:
         are counted — this matches the entries displayed by /stock.
         """
         cur = self.conn.execute(
-            """SELECT COALESCE(SUM(cantidad), 0)
-               FROM transactions
-               WHERE tipo = 'ENTRADA' AND consumed_at IS NULL"""
+            """SELECT COALESCE(SUM(amount), 0)
+               FROM milk_entries
+               WHERE entry_type = 'ENTRADA' AND consumed_at IS NULL"""
         )
         row = cur.fetchone()
         return max(row[0], 0) if row else 0
@@ -367,12 +367,12 @@ class MilkDatabase:
 
         cur = self.conn.execute(
             """SELECT
-                   COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN cantidad ELSE 0 END), 0) AS total_entradas,
-                   COALESCE(SUM(CASE WHEN tipo = 'SALIDA'   THEN cantidad ELSE 0 END), 0) AS total_salidas
-               FROM transactions
-               WHERE (tipo = 'ENTRADA' AND add_at >= ? AND add_at < ?)
-                  OR (tipo = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
-                  OR (tipo = 'SALIDA' AND consumed_at IS NULL AND add_at >= ? AND add_at < ?)""",
+                   COALESCE(SUM(CASE WHEN entry_type = 'ENTRADA' THEN amount ELSE 0 END), 0) AS total_entradas,
+                   COALESCE(SUM(CASE WHEN entry_type = 'SALIDA'   THEN amount ELSE 0 END), 0) AS total_salidas
+               FROM milk_entries
+               WHERE (entry_type = 'ENTRADA' AND event_date >= ? AND event_date < ?)
+                  OR (entry_type = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
+                  OR (entry_type = 'SALIDA' AND consumed_at IS NULL AND event_date >= ? AND event_date < ?)""",
             (start, end, start, end, start, end),
         )
         row = cur.fetchone()
@@ -382,11 +382,11 @@ class MilkDatabase:
         # Reversal SALIDAs (ENTRADA→SALIDA on same day) represent both
         # an extraction and a consumption. Add their amount as phantom ENTRADA.
         cur = self.conn.execute(
-            """SELECT COALESCE(SUM(cantidad), 0)
-               FROM transactions
-               WHERE tipo = 'SALIDA'
+            """SELECT COALESCE(SUM(amount), 0)
+               FROM milk_entries
+               WHERE entry_type = 'SALIDA'
                  AND consumed_at >= ? AND consumed_at < ?
-                 AND add_at >= ? AND add_at < ?""",
+                 AND event_date >= ? AND event_date < ?""",
             (start, end, start, end),
         )
         phantom = cur.fetchone()[0]

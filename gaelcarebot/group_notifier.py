@@ -58,10 +58,10 @@ def get_daily_summary_text(db, date: str) -> str:
     lines = [SUMMARY_HEADER.format(fecha=formatted_date)]
 
     for entry in entries:
-        cantidad = entry["cantidad"]
+        cantidad = entry["amount"]
         responsable = entry.get("username") or "Desconocido"
 
-        if entry["tipo"] == "ENTRADA":
+        if entry["entry_type"] == "ENTRADA":
             lines.append(
                 SUMMARY_ENTRADAS.format(cantidad=cantidad, responsable=responsable)
             )
@@ -71,7 +71,7 @@ def get_daily_summary_text(db, date: str) -> str:
             )
 
     balance = sum(
-        e["cantidad"] if e["tipo"] == "ENTRADA" else -e["cantidad"]
+        e["amount"] if e["entry_type"] == "ENTRADA" else -e["amount"]
         for e in entries
     )
     lines.append(SUMMARY_BALANCE.format(balance=balance))

@@ -72,12 +72,12 @@ async def _agregar_start_impl(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         try:
             entry_id = db.add_entry(
-                tipo="ENTRADA",
-                cantidad=cantidad,
-                add_at=add_at_iso,
+                entry_type="ENTRADA",
+                amount=cantidad,
+                event_date=add_at_iso,
                 user_id=user_id,
                 username=username,
-                notas=notas,
+                notes=notas,
             )
             logger.info("Added entry %d: %d ml by user %s", entry_id, cantidad, username)
 
@@ -178,12 +178,12 @@ async def confirm_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     try:
         entry_id = db.add_entry(
-            tipo="ENTRADA",
-            cantidad=cantidad,
-            add_at=add_at_iso,
+            entry_type="ENTRADA",
+            amount=cantidad,
+            event_date=add_at_iso,
             user_id=user_id,
             username=username,
-            notas=None,
+            notes=None,
         )
         logger.info("Added entry %d: %d ml by user %s", entry_id, cantidad, username)
 
@@ -282,12 +282,12 @@ async def agregar_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     
     try:
         entry_id = db.add_entry(
-            tipo="ENTRADA",
-            cantidad=cantidad,
-            add_at=add_at_iso,
+            entry_type="ENTRADA",
+            amount=cantidad,
+            event_date=add_at_iso,
             user_id=user_id,
             username=username,
-            notas=notas,
+            notes=notas,
         )
         logger.info("Added entry %d: %d ml by user %s", entry_id, cantidad, username)
         

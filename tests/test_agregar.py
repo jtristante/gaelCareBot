@@ -74,8 +74,8 @@ class TestAgregarInlineMode:
         assert result == ConversationHandler.END
         entries = db.get_all_entries()
         assert len(entries) == 1
-        assert entries[0]["cantidad"] == 150
-        assert entries[0]["tipo"] == "ENTRADA"
+        assert entries[0]["amount"] == 150
+        assert entries[0]["entry_type"] == "ENTRADA"
 
     async def test_agregar_inline_with_notes(self, setup_update, setup_context, db):
         """Test /agregar 200 guardado en congelador adds entry with notes."""
@@ -87,8 +87,8 @@ class TestAgregarInlineMode:
         assert result == ConversationHandler.END
         entries = db.get_all_entries()
         assert len(entries) == 1
-        assert entries[0]["cantidad"] == 200
-        assert entries[0]["notas"] == "guardado en congelador"
+        assert entries[0]["amount"] == 200
+        assert entries[0]["notes"] == "guardado en congelador"
 
     async def test_agregar_inline_negative(self, setup_update, setup_context, db):
         """Test /agregar -50 returns ERROR_INVALID_AMOUNT and no entry added."""
@@ -156,8 +156,8 @@ async def test_agregar_valid(authorized_update, mock_context, db):
     
     entries = db.get_all_entries()
     assert len(entries) == 1
-    assert entries[0]["cantidad"] == 150
-    assert entries[0]["tipo"] == "ENTRADA"
+    assert entries[0]["amount"] == 150
+    assert entries[0]["entry_type"] == "ENTRADA"
 
 
 async def test_agregar_invalid_negative(authorized_update, mock_context, db):
@@ -208,8 +208,8 @@ async def test_agregar_with_notes(authorized_update, mock_context, db):
     
     entries = db.get_all_entries()
     assert len(entries) == 1
-    assert entries[0]["cantidad"] == 200
-    assert entries[0]["notas"] == "guardado en congelador"
+    assert entries[0]["amount"] == 200
+    assert entries[0]["notes"] == "guardado en congelador"
 
 
 async def test_agregar_missing_args(authorized_update, mock_context, db):
@@ -331,8 +331,8 @@ class TestAgregarInteractiveFlow:
 
         entries = db.get_all_entries()
         assert len(entries) == 1
-        assert entries[0]["cantidad"] == 150
-        assert entries[0]["tipo"] == "ENTRADA"
+        assert entries[0]["amount"] == 150
+        assert entries[0]["entry_type"] == "ENTRADA"
         update.callback_query.edit_message_text.assert_called_once()
         assert result == ConversationHandler.END
 

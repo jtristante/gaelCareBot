@@ -21,7 +21,6 @@ GaelCareBot — Telegram bot for tracking breast milk stock (extractions, consum
 │   ├── messages.py       # All user-facing strings (Spanish)
 │   └── group_notifier.py # Daily summary push to Telegram group
 ├── tests/                # pytest (asyncio_mode=auto)
-├── scripts/              # Dev utilities (seed.py)
 ├── Dockerfile            # python:3.11-slim, non-root appuser
 ├── docker-compose.yml    # Single service, volume ./data:/data
 └── pyproject.toml         # PEP 621 — deps, build, metadata
@@ -73,7 +72,6 @@ GaelCareBot — Telegram bot for tracking breast milk stock (extractions, consum
 ## ANTI-PATTERNS (THIS PROJECT)
 
 - **Do NOT hardcode timezone offsets**. Use `pytz.timezone("Europe/Madrid")`, not `timezone(timedelta(hours=2))`.
-- **Do NOT import from `scripts/seed.py`** — self-contained, hacks `sys.path`.
 - **Do NOT reference `/eliminar` command** — removed in commit `06f7812`, only `.pyc` remains.
 - **Do NOT add custom exception classes** — project uses built-in `ValueError` + log pattern.
 - **Do NOT include real-looking example values for tokens, user IDs, group chat IDs, or any secrets in documentation.** Use obvious placeholders (e.g., `1234567890:ABCdef...` for tokens, `987654321` for user IDs). Never use values that could be mistaken for real credentials — this includes truncated tokens, plausible user IDs, or any data that resembles production secrets.
@@ -92,7 +90,6 @@ GaelCareBot — Telegram bot for tracking breast milk stock (extractions, consum
 pip install -e .               # Install package (runtime deps)
 pip install -e ".[dev]"        # Install with dev dependencies
 python -m gaelcarebot.bot      # Run bot directly
-python scripts/seed.py         # Reset DB + seed data
 pytest                         # Run tests
 
 # Docker

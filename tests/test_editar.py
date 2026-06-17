@@ -149,8 +149,8 @@ class TestEditarStart:
     async def test_editar_start_with_entries(self, setup_update, setup_context, mock_db):
         """Test /editar with entries - should show entry selection keyboard."""
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "add_at": "2026-05-19T10:00:00", "cantidad": 200},
-            {"id": 2, "tipo": "SALIDA", "add_at": "2026-05-18T12:00:00", "cantidad": 100},
+            {"id": 1, "entry_type": "ENTRADA", "event_date": "2026-05-19T10:00:00", "amount": 200},
+            {"id": 2, "entry_type": "SALIDA", "event_date": "2026-05-18T12:00:00", "amount": 100},
         ]
 
         update = setup_update(123)
@@ -208,10 +208,10 @@ class TestEditarSelectEntry:
         """Test selecting an entry - should show field selection."""
         mock_db.get_entry.return_value = {
             "id": 1,
-            "tipo": "ENTRADA",
-            "add_at": "2026-05-19T10:00:00",
-            "cantidad": 200,
-            "notas": None,
+            "entry_type": "ENTRADA",
+            "event_date": "2026-05-19T10:00:00",
+            "amount": 200,
+            "notes": None,
         }
 
         update = setup_callback_update("edit_1")
@@ -284,13 +284,13 @@ class TestEditarModifyCantidad:
     async def test_editar_modify_cantidad(self, setup_callback_update, setup_message_update, setup_context, mock_db):
         """Test modifying cantidad field with valid value."""
         # Step 1: Select the cantidad field
-        update = setup_callback_update("field_cantidad")
-        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"cantidad": 100}})
+        update = setup_callback_update("field_amount")
+        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"amount": 100}})
 
         result = await field_selected(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        assert ctx.user_data["edit_field"] == "cantidad"
+        assert ctx.user_data["edit_field"] == "amount"
         assert result == EDITING_VALUE
 
         # Step 2: Enter new cantidad value
@@ -308,7 +308,7 @@ class TestEditarModifyCantidad:
         result = await confirm_edit(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        mock_db.update_entry.assert_called_once_with(1, cantidad=150)
+        mock_db.update_entry.assert_called_once_with(1, amount=150)
         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
         assert result == -1  # ConversationHandler.END
 
@@ -369,13 +369,13 @@ class TestEditarModifyNotas:
     async def test_editar_modify_notas(self, setup_callback_update, setup_message_update, setup_context, mock_db):
         """Test modifying notas field with valid value."""
         # Step 1: Select the notas field
-        update = setup_callback_update("field_notas")
-        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"notas": None}})
+        update = setup_callback_update("field_notes")
+        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"notes": None}})
 
         result = await field_selected(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        assert ctx.user_data["edit_field"] == "notas"
+        assert ctx.user_data["edit_field"] == "notes"
         assert result == EDITING_VALUE
 
         # Step 2: Enter new notas value
@@ -393,7 +393,7 @@ class TestEditarModifyNotas:
         result = await confirm_edit(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        mock_db.update_entry.assert_called_once_with(1, notas="Nueva nota de prueba")
+        mock_db.update_entry.assert_called_once_with(1, notes="Nueva nota de prueba")
         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
         assert result == -1  # ConversationHandler.END
 
@@ -433,7 +433,7 @@ class TestEditarCancel:
     async def test_editar_cancel(self, setup_callback_update, setup_context):
         """Test canceling the conversation."""
         update = setup_callback_update()
-        ctx = setup_context({"edit_entry_id": 1, "edit_field": "cantidad"})
+        ctx = setup_context({"edit_entry_id": 1, "edit_field": "amount"})
 
         result = await cancel(update, ctx)
 
@@ -498,8 +498,8 @@ class TestEditarInvalidCantidad:
     async def test_editar_invalid_cantidad(self, setup_callback_update, setup_message_update, setup_context, mock_db):
         """Test entering an invalid cantidad value."""
         # Step 1: Select the cantidad field
-        update = setup_callback_update("field_cantidad")
-        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"cantidad": 100}})
+        update = setup_callback_update("field_amount")
+        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"amount": 100}})
 
         result = await field_selected(update, ctx)
         assert result == EDITING_VALUE
@@ -557,13 +557,13 @@ class TestEditarModifyTipo:
     @pytest.mark.asyncio
     async def test_editar_select_tipo_field(self, setup_callback_update, setup_context):
         """Test selecting tipo field shows ENTRADA/SALIDA options."""
-        update = setup_callback_update("field_tipo")
-        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"tipo": "ENTRADA"}})
+        update = setup_callback_update("field_entry_type")
+        ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"entry_type": "ENTRADA"}})
 
         result = await field_selected(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        assert ctx.user_data["edit_field"] == "tipo"
+        assert ctx.user_data["edit_field"] == "entry_type"
         assert result == SELECTING_TIPO
         # Verify the keyboard has ENTRADA and SALIDA options
         call_args = update.callback_query.edit_message_text.call_args
@@ -573,11 +573,11 @@ class TestEditarModifyTipo:
     async def test_editar_tipo_entrada_to_salida(self, setup_callback_update, setup_context, mock_db):
         """Test changing tipo from ENTRADA to SALIDA sets consumed_at."""
         # Step 1: Select SALIDA
-        update = setup_callback_update("tipo_SALIDA")
+        update = setup_callback_update("entry_type_SALIDA")
         ctx = setup_context({
             "edit_entry_id": 1,
-            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
-            "edit_field": "tipo"
+            "edit_entry_original": {"entry_type": "ENTRADA", "amount": 100, "event_date": "2026-05-19T10:00:00", "notes": None},
+            "edit_field": "entry_type"
         })
 
         result = await tipo_selected(update, ctx)
@@ -592,7 +592,7 @@ class TestEditarModifyTipo:
         result = await confirm_edit(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
+        mock_db.update_entry.assert_called_once_with(1, entry_type="SALIDA")
         # Verify consumed_at was set (now using now_madrid() as bound parameter)
         assert mock_db.conn.execute.call_count == 2  # BEGIN + consumed_at
         begin_call, consumed_call = mock_db.conn.execute.call_args_list
@@ -607,11 +607,11 @@ class TestEditarModifyTipo:
     async def test_editar_tipo_salida_to_entrada(self, setup_callback_update, setup_context, mock_db):
         """Test changing tipo from SALIDA to ENTRADA clears consumed_at."""
         # Step 1: Select ENTRADA
-        update = setup_callback_update("tipo_ENTRADA")
+        update = setup_callback_update("entry_type_ENTRADA")
         ctx = setup_context({
             "edit_entry_id": 1,
-            "edit_entry_original": {"tipo": "SALIDA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
-            "edit_field": "tipo"
+            "edit_entry_original": {"entry_type": "SALIDA", "amount": 100, "event_date": "2026-05-19T10:00:00", "notes": None},
+            "edit_field": "entry_type"
         })
 
         result = await tipo_selected(update, ctx)
@@ -626,7 +626,7 @@ class TestEditarModifyTipo:
         result = await confirm_edit(update, ctx)
 
         update.callback_query.answer.assert_called_once()
-        mock_db.update_entry.assert_called_once_with(1, tipo="ENTRADA")
+        mock_db.update_entry.assert_called_once_with(1, entry_type="ENTRADA")
         # Verify consumed_at was cleared
         assert mock_db.conn.execute.call_count == 2  # BEGIN + consumed_at=NULL
         begin_call, consumed_call = mock_db.conn.execute.call_args_list
@@ -640,11 +640,11 @@ class TestEditarModifyTipo:
     async def test_editar_tipo_same_value_no_consumed_at_change(self, setup_callback_update, setup_context, mock_db):
         """Test changing tipo to same value doesn't modify consumed_at."""
         # Select ENTRADA when already ENTRADA
-        update = setup_callback_update("tipo_ENTRADA")
+        update = setup_callback_update("entry_type_ENTRADA")
         ctx = setup_context({
             "edit_entry_id": 1,
-            "edit_entry_original": {"tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
-            "edit_field": "tipo"
+            "edit_entry_original": {"entry_type": "ENTRADA", "amount": 100, "event_date": "2026-05-19T10:00:00", "notes": None},
+            "edit_field": "entry_type"
         })
 
         result = await tipo_selected(update, ctx)
@@ -654,7 +654,7 @@ class TestEditarModifyTipo:
         update = setup_callback_update("confirm")
         result = await confirm_edit(update, ctx)
 
-        mock_db.update_entry.assert_called_once_with(1, tipo="ENTRADA")
+        mock_db.update_entry.assert_called_once_with(1, entry_type="ENTRADA")
         # Verify consumed_at was NOT modified
         mock_db.conn.execute.assert_not_called()
         mock_db.conn.commit.assert_not_called()
@@ -679,23 +679,23 @@ class TestEditTipoIntegration:
         db = MilkDatabase(":memory:")
         db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
 
-        db.update_entry(1, tipo="SALIDA")
+        db.update_entry(1, entry_type="SALIDA")
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
             (now_madrid(), 1),
         )
         db.conn.commit()
 
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = NULL WHERE id = ?",
             (1,),
         )
         db.conn.commit()
-        db.update_entry(1, tipo="ENTRADA")
+        db.update_entry(1, entry_type="ENTRADA")
 
         entry = db.get_entry(1, include_consumed=True)
         assert entry["consumed_at"] is None
-        assert entry["tipo"] == "ENTRADA"
+        assert entry["entry_type"] == "ENTRADA"
 
     def test_edit_roundtrip_preserves_stock(self) -> None:
         """Stock IS preserved after SALIDA→ENTRADA with consumed_at cleared first.
@@ -707,19 +707,19 @@ class TestEditTipoIntegration:
         db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
         initial_stock = db.get_total_stock()
 
-        db.update_entry(1, tipo="SALIDA")
+        db.update_entry(1, entry_type="SALIDA")
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
             (now_madrid(), 1),
         )
         db.conn.commit()
 
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = NULL WHERE id = ?",
             (1,),
         )
         db.conn.commit()
-        db.update_entry(1, tipo="ENTRADA")
+        db.update_entry(1, entry_type="ENTRADA")
 
         assert db.get_total_stock() == initial_stock
 
@@ -733,19 +733,19 @@ class TestEditTipoIntegration:
         db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
 
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = ?, tipo = ? WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = ?, tipo = ? WHERE id = ?",
             (now_madrid(), "SALIDA", 1),
         )
         db.conn.commit()
 
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = NULL WHERE id = ?",
             (1,),
         )
         db.conn.commit()
-        success = db.update_entry(1, tipo="ENTRADA")
+        success = db.update_entry(1, entry_type="ENTRADA")
         entry = db.get_entry(1, include_consumed=True)
 
         assert success is True
-        assert entry["tipo"] == "ENTRADA"
+        assert entry["entry_type"] == "ENTRADA"
         assert entry["consumed_at"] is None

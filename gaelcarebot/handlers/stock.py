@@ -26,8 +26,8 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     """
     db = context.bot_data["db"]
     entries = [
-        e for e in db.get_all_entries(order_by="add_at DESC", include_consumed=False)
-        if e["tipo"] == "ENTRADA"
+        e for e in db.get_all_entries(order_by="event_date DESC", include_consumed=False)
+        if e["entry_type"] == "ENTRADA"
     ]
 
     if not entries:
@@ -40,10 +40,10 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     rows = []
     for entry in entries:
-        dt = datetime.fromisoformat(entry["add_at"])
+        dt = datetime.fromisoformat(entry["event_date"])
         fecha_str = dt.strftime("%d/%m %H:%M")
 
-        cantidad_str = f"{entry['cantidad']}ml"
+        cantidad_str = f"{entry['amount']}ml"
         responsable = html.escape(entry["username"] or "\u2014")
 
         rows.append(

@@ -71,9 +71,9 @@ async def editar_start(update: Update, context: Any) -> int:
     keyboard = []
     for entry in entries:
         # Format: ID - Tipo - Fecha - Cantidad
-        fecha = entry["add_at"][:10] if entry["add_at"] else "N/A"
-        tipo_label = "ENT" if entry["tipo"] == "ENTRADA" else "SAL"
-        label = f"#{entry['id']} [{tipo_label}] {fecha} - {entry['cantidad']}ml"
+        fecha = entry["event_date"][:10] if entry["event_date"] else "N/A"
+        tipo_label = "ENT" if entry["entry_type"] == "ENTRADA" else "SAL"
+        label = f"#{entry['id']} [{tipo_label}] {fecha} - {entry['amount']}ml"
         keyboard.append([InlineKeyboardButton(label, callback_data=f"edit_{entry['id']}")])
 
     # Add cancel button
@@ -121,10 +121,10 @@ async def entry_selected(update: Update, context: Any) -> int:
 
     # Show field selection keyboard
     keyboard = [
-        [InlineKeyboardButton(BTN_EDIT_CANTIDAD, callback_data="field_cantidad")],
+        [InlineKeyboardButton(BTN_EDIT_CANTIDAD, callback_data="field_amount")],
         [InlineKeyboardButton(BTN_EDIT_FECHA, callback_data="field_fecha")],
-        [InlineKeyboardButton(BTN_EDIT_NOTAS, callback_data="field_notas")],
-        [InlineKeyboardButton(BTN_EDIT_TIPO, callback_data="field_tipo")],
+        [InlineKeyboardButton(BTN_EDIT_NOTAS, callback_data="field_notes")],
+        [InlineKeyboardButton(BTN_EDIT_TIPO, callback_data="field_entry_type")],
         [InlineKeyboardButton(BTN_CANCEL, callback_data="cancel")],
     ]
 
@@ -154,19 +154,19 @@ async def field_selected(update: Update, context: Any) -> int:
 
     # Map callback names to display names
     field_display_map = {
-        "cantidad": BTN_EDIT_CANTIDAD,
+        "amount": BTN_EDIT_CANTIDAD,
         "fecha": BTN_EDIT_FECHA,
-        "notas": BTN_EDIT_NOTAS,
-        "tipo": BTN_EDIT_TIPO,
+        "notes": BTN_EDIT_NOTAS,
+        "entry_type": BTN_EDIT_TIPO,
     }
 
     context.user_data["edit_field"] = field_name
 
     # Handle tipo field differently - show ENTRADA/SALIDA options
-    if field_name == "tipo":
+    if field_name == "entry_type":
         keyboard = [
-            [InlineKeyboardButton("ENTRADA", callback_data="tipo_ENTRADA")],
-            [InlineKeyboardButton("SALIDA", callback_data="tipo_SALIDA")],
+            [InlineKeyboardButton("ENTRADA", callback_data="entry_type_ENTRADA")],
+            [InlineKeyboardButton("SALIDA", callback_data="entry_type_SALIDA")],
             [InlineKeyboardButton(BTN_CANCEL, callback_data="cancel")],
         ]
         await query.edit_message_text(
@@ -205,15 +205,15 @@ async def tipo_selected(update: Update, context: Any) -> int:
     # Get original entry for display
     entry_id = context.user_data.get("edit_entry_id")
     original_entry = context.user_data.get("edit_entry_original", {})
-    fecha = original_entry.get("add_at", "N/A")[:10] if original_entry.get("add_at") else "N/A"
+    fecha = original_entry.get("event_date", "N/A")[:10] if original_entry.get("event_date") else "N/A"
 
     # Build confirmation message
     entry_info = (
         f"ID: #{entry_id}\n"
-        f"Tipo: {original_entry.get('tipo', 'N/A')}\n"
-        f"Cantidad: {original_entry.get('cantidad', 'N/A')}ml\n"
+        f"Tipo: {original_entry.get('entry_type', 'N/A')}\n"
+        f"Cantidad: {original_entry.get('amount', 'N/A')}ml\n"
         f"Fecha: {fecha}\n"
-        f"Notas: {original_entry.get('notas') or 'Ninguna'}\n\n"
+        f"Notas: {original_entry.get('notes') or 'Ninguna'}\n\n"
         f"Nuevo valor para tipo: {tipo_value}"
     )
 
@@ -242,7 +242,7 @@ async def receive_value(update: Update, context: Any) -> int:
 
     # Validate based on field type
     validated_value = None
-    if field_name == "cantidad":
+    if field_name == "amount":
         validated_value = _validate_cantidad(new_value)
         if validated_value is None:
             await update.message.reply_text(ERROR_INVALID_AMOUNT)
@@ -261,15 +261,15 @@ async def receive_value(update: Update, context: Any) -> int:
 
     # Get original entry for display
     original_entry = context.user_data.get("edit_entry_original", {})
-    fecha = original_entry.get("add_at", "N/A")[:10] if original_entry.get("add_at") else "N/A"
+    fecha = original_entry.get("event_date", "N/A")[:10] if original_entry.get("event_date") else "N/A"
 
     # Build confirmation message
     entry_info = (
         f"ID: #{entry_id}\n"
-        f"Tipo: {original_entry.get('tipo', 'N/A')}\n"
-        f"Cantidad: {original_entry.get('cantidad', 'N/A')}ml\n"
+        f"Tipo: {original_entry.get('entry_type', 'N/A')}\n"
+        f"Cantidad: {original_entry.get('amount', 'N/A')}ml\n"
         f"Fecha: {fecha}\n"
-        f"Notas: {original_entry.get('notas') or 'Ninguna'}\n\n"
+        f"Notas: {original_entry.get('notes') or 'Ninguna'}\n\n"
         f"Nuevo valor para {field_name}: {new_value}"
     )
 
@@ -348,18 +348,18 @@ async def confirm_edit(update: Update, context: Any) -> int:
         return ConversationHandler.END
 
     try:
-        if field_name == "tipo":
+        if field_name == "entry_type":
             original_entry = context.user_data.get("edit_entry_original", {})
-            original_tipo = original_entry.get("tipo", "")
-            if original_tipo == "SALIDA" and new_value == "ENTRADA":
+            original_entry_type = original_entry.get("entry_type", "")
+            if original_entry_type == "SALIDA" and new_value == "ENTRADA":
                 # SALIDA → ENTRADA: clear consumed_at first, then update tipo
                 db.conn.execute("BEGIN")
                 try:
                     db.conn.execute(
-                        "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+                        "UPDATE milk_entries SET consumed_at = NULL WHERE id = ?",
                         (entry_id,),
                     )
-                    success = db.update_entry(entry_id, tipo="ENTRADA")
+                    success = db.update_entry(entry_id, entry_type="ENTRADA")
                     if not success:
                         raise ValueError(
                             "update_entry failed after clearing consumed_at"
@@ -368,17 +368,17 @@ async def confirm_edit(update: Update, context: Any) -> int:
                 except Exception:
                     db.conn.rollback()
                     success = False
-            elif original_tipo == "ENTRADA" and new_value == "SALIDA":
+            elif original_entry_type == "ENTRADA" and new_value == "SALIDA":
                 # ENTRADA → SALIDA: update tipo first, then set consumed_at
                 db.conn.execute("BEGIN")
                 try:
-                    success = db.update_entry(entry_id, tipo="SALIDA")
+                    success = db.update_entry(entry_id, entry_type="SALIDA")
                     if not success:
                         raise ValueError(
                             "update_entry failed for SALIDA change"
                         )
                     db.conn.execute(
-                        "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                        "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                         (now_madrid(), entry_id),
                     )
                     db.conn.commit()
@@ -394,13 +394,13 @@ async def confirm_edit(update: Update, context: Any) -> int:
 
             if field_name == "fecha":
                 original_entry = context.user_data.get("edit_entry_original", {})
-                original_add_at = original_entry.get("add_at", "")
+                original_event_date = original_entry.get("event_date", "")
                 if original_add_at and "T" in original_add_at:
                     original_time = original_add_at.split("T")[1]
                     new_value = f"{new_value}T{original_time}"
                 else:
                     new_value = f"{new_value}T12:00:00"
-                update_kwargs = {"add_at": new_value}
+                update_kwargs = {"event_date": new_value}
 
             success = db.update_entry(entry_id, **update_kwargs)
 

@@ -81,7 +81,7 @@ class TestConsumirCommandReversalMode:
         update = setup_update(123)
         ctx = setup_context()
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00"}
+            {"id": 1, "entry_type": "ENTRADA", "amount": 100, "event_date": "2026-05-19T10:00:00"}
         ]
 
         result = await consumir_command(update, ctx)
@@ -105,8 +105,8 @@ class TestConsumirCommandReversalMode:
         update = setup_update(123)
         ctx = setup_context()
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
-            {"id": 2, "tipo": "SALIDA", "cantidad": 50, "add_at": "2026-05-19T11:00:00", "notas": None},
+            {"id": 1, "entry_type": "ENTRADA", "amount": 100, "event_date": "2026-05-19T10:00:00", "notes": None},
+            {"id": 2, "entry_type": "SALIDA", "amount": 50, "event_date": "2026-05-19T11:00:00", "notes": None},
         ]
 
         result = await consumir_command(update, ctx)
@@ -151,13 +151,13 @@ class TestConsumirCommandReversalMode:
         )
 
         db.consume_fifo(
-            cantidad=50,
-            add_at="2026-05-19T12:00:00",
+            amount=50,
+            event_date="2026-05-19T12:00:00",
             user_id=123,
         )
 
         row = db.conn.execute(
-            "SELECT * FROM transactions WHERE tipo = 'SALIDA' ORDER BY id DESC LIMIT 1"
+            "SELECT * FROM milk_entries WHERE entry_type = 'SALIDA' ORDER BY id DESC LIMIT 1"
         ).fetchone()
 
         assert row is not None
@@ -242,9 +242,9 @@ class TestReversalFlowInteractions:
         update = setup_update(123)
         ctx = setup_context([])
         mock_db.get_all_entries.return_value = [
-            {"id": 1, "tipo": "ENTRADA", "cantidad": 100, "add_at": "2026-05-19T10:00:00", "notas": None},
-            {"id": 2, "tipo": "SALIDA", "cantidad": 50, "add_at": "2026-05-19T11:00:00", "notas": None},
-            {"id": 3, "tipo": "ENTRADA", "cantidad": 200, "add_at": "2026-05-19T12:00:00", "notas": None},
+            {"id": 1, "entry_type": "ENTRADA", "amount": 100, "event_date": "2026-05-19T10:00:00", "notes": None},
+            {"id": 2, "entry_type": "SALIDA", "amount": 50, "event_date": "2026-05-19T11:00:00", "notes": None},
+            {"id": 3, "entry_type": "ENTRADA", "amount": 200, "event_date": "2026-05-19T12:00:00", "notes": None},
         ]
 
         result = await consumir_command(update, ctx)
@@ -277,10 +277,10 @@ class TestReversalFlowInteractions:
         ctx = setup_context(user_data={})
         mock_db.get_entry.return_value = {
             "id": 1,
-            "tipo": "ENTRADA",
-            "cantidad": 100,
-            "add_at": "2026-05-19T10:00:00",
-            "notas": "Test notes"
+            "entry_type": "ENTRADA",
+            "amount": 100,
+            "event_date": "2026-05-19T10:00:00",
+            "notes": "Test notes"
         }
 
         result = await entry_selected(update, ctx)
@@ -320,17 +320,17 @@ class TestReversalFlowInteractions:
         mock_db.update_entry.return_value = True
         mock_db.get_entry.return_value = {
             "id": 1,
-            "tipo": "ENTRADA",
-            "cantidad": 100,
-            "add_at": "2026-05-19T10:00:00",
-            "notas": "Test notes",
+            "entry_type": "ENTRADA",
+            "amount": 100,
+            "event_date": "2026-05-19T10:00:00",
+            "notes": "Test notes",
             "username": "test_user"
         }
 
         result = await confirm_reversal(update, ctx)
 
-        # Verify update_entry called with tipo='SALIDA'
-        mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
+        # Verify update_entry called with entry_type='SALIDA'
+        mock_db.update_entry.assert_called_once_with(1, entry_type="SALIDA")
 
         # Verify consumed_at was set via raw SQL
         mock_db.conn.execute.assert_called_once()
@@ -343,7 +343,7 @@ class TestReversalFlowInteractions:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+            MSG_CONSUMED.format(amount=100, fecha="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -394,10 +394,10 @@ class TestReversalFlowInteractions:
         ctx = setup_context(user_data={})
         mock_db.get_entry.return_value = {
             "id": 1,
-            "tipo": "SALIDA",  # Not ENTRADA
-            "cantidad": 100,
-            "add_at": "2026-05-19T10:00:00",
-            "notas": None
+            "entry_type": "SALIDA",  # Not ENTRADA
+            "amount": 100,
+            "event_date": "2026-05-19T10:00:00",
+            "notes": None
         }
 
         result = await entry_selected(update, ctx)
@@ -435,10 +435,10 @@ class TestReversalFlowInteractions:
         mock_db.update_entry.return_value = True
         mock_db.get_entry.return_value = {
             "id": 1,
-            "tipo": "ENTRADA",
-            "cantidad": 100,
-            "add_at": "2026-05-19T10:00:00",
-            "notas": "Test notes",
+            "entry_type": "ENTRADA",
+            "amount": 100,
+            "event_date": "2026-05-19T10:00:00",
+            "notes": "Test notes",
             "username": "test_user"
         }
 
@@ -450,7 +450,7 @@ class TestReversalFlowInteractions:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+            MSG_CONSUMED.format(amount=100, fecha="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -466,10 +466,10 @@ class TestReversalFlowInteractions:
         mock_db.update_entry.return_value = True
         mock_db.get_entry.return_value = {
             "id": 1,
-            "tipo": "ENTRADA",
-            "cantidad": 100,
-            "add_at": "2026-05-19T10:00:00",
-            "notas": "Test notes",
+            "entry_type": "ENTRADA",
+            "amount": 100,
+            "event_date": "2026-05-19T10:00:00",
+            "notes": "Test notes",
             "username": "test_user"
         }
 
@@ -479,12 +479,12 @@ class TestReversalFlowInteractions:
             result = await confirm_reversal(update, ctx)
 
             # Verify update still happened
-            mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
+            mock_db.update_entry.assert_called_once_with(1, entry_type="SALIDA")
             mock_db.conn.commit.assert_called_once()
 
             # Verify success message still shown despite notification failure
             update.callback_query.edit_message_text.assert_called_once_with(
-                MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+                MSG_CONSUMED.format(amount=100, fecha="19/05/2026")
             )
 
         # Verify returned ConversationHandler.END
@@ -533,7 +533,7 @@ class TestReversalFlowInteractions:
 
         This MUST FAIL (RED) because confirm_reversal() calls db.get_entry()
         AFTER setting consumed_at, and get_entry() filters by consumed_at IS NULL,
-        so it returns None -> cantidad=0, fecha="N/A".
+        so it returns None -> amount=0, fecha="N/A".
 
         The fix must move get_entry() BEFORE the mutation.
         """
@@ -562,15 +562,15 @@ class TestReversalFlowInteractions:
         result = await confirm_reversal(update, context)
 
         # Verify the mutation still happened (sanity check — the bug is in display, not mutation)
-        row = db.conn.execute("SELECT * FROM transactions WHERE id = ?", (entry_id,)).fetchone()
-        assert row["tipo"] == "SALIDA"
+        row = db.conn.execute("SELECT * FROM milk_entries WHERE id = ?", (entry_id,)).fetchone()
+        assert row["entry_type"] == "SALIDA"
         assert row["consumed_at"] is not None
 
         # Verify the displayed message — now shows correct data after fix
         call_args = update.callback_query.edit_message_text.call_args
         msg_text = call_args[0][0]
 
-        expected = MSG_CONSUMED.format(cantidad=150, fecha="19/05/2026")
+        expected = MSG_CONSUMED.format(amount=150, fecha="19/05/2026")
         assert msg_text == expected, f"Expected '{expected}', got: {msg_text}"
 
         assert result == ConversationHandler.END
@@ -607,11 +607,11 @@ class TestReversalFlowInteractions:
         result = await confirm_reversal(update, context)
 
         # Query directly via SQL to verify the mutation
-        row = db.conn.execute("SELECT * FROM transactions WHERE id = ?", (entry_id,)).fetchone()
+        row = db.conn.execute("SELECT * FROM milk_entries WHERE id = ?", (entry_id,)).fetchone()
 
         # Verify tipo was changed to SALIDA
-        assert row["tipo"] == "SALIDA", (
-            f"Expected tipo='SALIDA', got '{row['tipo']}'"
+        assert row["entry_type"] == "SALIDA", (
+            f"Expected entry_type='SALIDA', got '{row['tipo']}'"
         )
 
         # Verify consumed_at was set (not NULL)

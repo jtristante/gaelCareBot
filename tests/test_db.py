@@ -25,12 +25,12 @@ class TestMilkDatabase:
 
         stored = db.get_entry(entry_id)
         assert stored is not None
-        assert stored["tipo"] == sample_entry["tipo"]
-        assert stored["cantidad"] == sample_entry["cantidad"]
-        assert stored["add_at"] == sample_entry["add_at"]
+        assert stored["entry_type"] == sample_entry["entry_type"]
+        assert stored["amount"] == sample_entry["amount"]
+        assert stored["event_date"] == sample_entry["event_date"]
         assert stored["user_id"] == sample_entry["user_id"]
         assert stored["username"] == sample_entry["username"]
-        assert stored["notas"] == sample_entry["notas"]
+        assert stored["notes"] == sample_entry["notes"]
 
     def test_add_multiple_entries(self, db: MilkDatabase) -> None:
         """Multiple entries can be added and retrieved."""
@@ -41,8 +41,8 @@ class TestMilkDatabase:
         entry2 = db.get_entry(id2)
         assert entry1 is not None
         assert entry2 is not None
-        assert entry1["cantidad"] == 100
-        assert entry2["cantidad"] == 50
+        assert entry1["amount"] == 100
+        assert entry2["amount"] == 50
 
     def test_get_total_stock(self, db: MilkDatabase) -> None:
         """Stock = SUM(ENTRADA WHERE consumed_at IS NULL)."""
@@ -106,43 +106,43 @@ class TestMilkDatabase:
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
-        updated = db.update_entry(entry_id, cantidad=250)
+        updated = db.update_entry(entry_id, amount=250)
         assert updated is True, "update_entry should return True"
 
         stored = db.get_entry(entry_id)
-        assert stored["cantidad"] == 250
+        assert stored["amount"] == 250
 
     def test_update_entry_tipo(self, db: MilkDatabase) -> None:
         """Update tipo field."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
-        db.update_entry(entry_id, tipo="SALIDA")
+        db.update_entry(entry_id, entry_type="SALIDA")
         stored = db.get_entry(entry_id)
-        assert stored["tipo"] == "SALIDA"
+        assert stored["entry_type"] == "SALIDA"
 
     def test_update_entry_notas(self, db: MilkDatabase) -> None:
         """Update notas field."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
-        db.update_entry(entry_id, notas="Nota actualizada")
+        db.update_entry(entry_id, notes="Nota actualizada")
         stored = db.get_entry(entry_id)
-        assert stored["notas"] == "Nota actualizada"
+        assert stored["notes"] == "Nota actualizada"
 
     def test_update_entry_multiple_fields(self, db: MilkDatabase) -> None:
         """Update multiple fields at once."""
         entry_id = db.add_entry(
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
-        db.update_entry(entry_id, cantidad=300, notas="Nuevo lote")
+        db.update_entry(entry_id, amount=300, notes="Nuevo lote")
         stored = db.get_entry(entry_id)
-        assert stored["cantidad"] == 300
-        assert stored["notas"] == "Nuevo lote"
+        assert stored["amount"] == 300
+        assert stored["notes"] == "Nuevo lote"
 
     def test_update_nonexistent_entry(self, db: MilkDatabase) -> None:
         """Updating a nonexistent entry returns False."""
-        result = db.update_entry(999, cantidad=100)
+        result = db.update_entry(999, amount=100)
         assert result is False
 
     def test_update_entry_invalid_column(self, db: MilkDatabase) -> None:
@@ -183,7 +183,7 @@ class TestMilkDatabase:
             )
             stored = db.get_entry(entry_id)
             assert stored is not None
-            assert stored["cantidad"] == 200
+            assert stored["amount"] == 200
 
         assert db.conn is None
 
@@ -195,12 +195,12 @@ class TestMilkDatabase:
             "2026-05-19T10:00:00",
             123,
             username=None,
-            notas=None,
+            notes=None,
         )
         stored = db.get_entry(entry_id)
         assert stored is not None
         assert stored["username"] is None
-        assert stored["notas"] is None
+        assert stored["notes"] is None
 
     def test_add_entry_with_username_and_notas(self, db: MilkDatabase) -> None:
         """Entries with username and notas are fully stored."""
@@ -210,11 +210,11 @@ class TestMilkDatabase:
             "2026-05-19T10:00:00",
             123,
             username="test_user",
-            notas="Nota de prueba",
+            notes="Nota de prueba",
         )
         stored = db.get_entry(entry_id)
         assert stored["username"] == "test_user"
-        assert stored["notas"] == "Nota de prueba"
+        assert stored["notes"] == "Nota de prueba"
 
     def test_add_invalid_tipo(self, db: MilkDatabase) -> None:
         """Adding an entry with an invalid tipo raises ValueError."""
@@ -222,7 +222,7 @@ class TestMilkDatabase:
             db.add_entry("INVALID", 100, "2026-05-19T10:00:00", 123)
 
     def test_add_entry_zero_cantidad(self, db: MilkDatabase) -> None:
-        """Adding an entry with cantidad=0 violates CHECK constraint."""
+        """Adding an entry with amount=0 violates CHECK constraint."""
         with pytest.raises(Exception):
             db.add_entry("ENTRADA", 0, "2026-05-19T10:00:00", 123)
 
@@ -270,7 +270,7 @@ class TestSoftDelete:
         db.delete_entry(entry_id)
         entries = db.get_all_entries()
         assert len(entries) == 1
-        assert entries[0]["cantidad"] == 100
+        assert entries[0]["amount"] == 100
 
     def test_get_total_stock_excludes_soft_deleted(self, db: MilkDatabase) -> None:
         """Soft-deleted ENTRADAs are excluded from stock (consumed_at IS NOT NULL)."""
@@ -303,7 +303,7 @@ class TestSoftDelete:
         db.delete_entry(entry_id)
         entries = db.get_entries_by_date("2026-05-19")
         assert len(entries) == 2
-        assert {e["cantidad"] for e in entries} == {200, 100}
+        assert {e["amount"] for e in entries} == {200, 100}
 
     def test_get_daily_summary_includes_soft_deleted(self, db: MilkDatabase) -> None:
         """daily summary includes ENTRADA entries even if later soft-deleted/consumed."""
@@ -322,7 +322,7 @@ class TestSoftDelete:
             "ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user"
         )
         db.delete_entry(entry_id)
-        result = db.update_entry(entry_id, cantidad=300)
+        result = db.update_entry(entry_id, amount=300)
         assert result is False
 
     def test_add_entry_still_works_after_soft_deletes(self, db: MilkDatabase) -> None:
@@ -337,7 +337,7 @@ class TestSoftDelete:
         assert entry_id2 > entry_id1
         entries = db.get_all_entries()
         assert len(entries) == 1
-        assert entries[0]["cantidad"] == 200
+        assert entries[0]["amount"] == 200
 
     def test_soft_deleted_entry_has_consumed_at_set(self, db: MilkDatabase) -> None:
         """the consumed_at field is not NULL after delete."""
@@ -347,7 +347,7 @@ class TestSoftDelete:
         db.delete_entry(entry_id)
         # Access the database directly to check consumed_at
         cur = db.conn.execute(
-            "SELECT consumed_at FROM transactions WHERE id = ?", (entry_id,)
+            "SELECT consumed_at FROM milk_entries WHERE id = ?", (entry_id,)
         )
         row = cur.fetchone()
         assert row[0] is not None
@@ -382,7 +382,7 @@ class TestResetDatabase:
         """after reset, the consumed_at column still exists."""
         db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
         db.reset_database(confirm=True)
-        cur = db.conn.execute("PRAGMA table_info(transactions)")
+        cur = db.conn.execute("PRAGMA table_info(milk_entries)")
         columns = {row[1] for row in cur.fetchall()}
         assert "consumed_at" in columns
 
@@ -434,7 +434,7 @@ class TestFIFOConsumption:
         db.consume_fifo(250, '2026-05-22T13:00:00', 123, 'test')
 
         # Check consumed_at is set for id1 and id2, not id3
-        cur = db.conn.execute("SELECT id, consumed_at FROM transactions WHERE tipo='ENTRADA'")
+        cur = db.conn.execute("SELECT id, consumed_at FROM milk_entries WHERE entry_type='ENTRADA'")
         rows = {row[0]: row[1] for row in cur.fetchall()}
         assert rows[id1] is not None, "id1 should be consumed"
         assert rows[id2] is not None, "id2 should be consumed"
@@ -449,15 +449,15 @@ class TestFIFOConsumption:
         entry_id = db.consume_fifo(100, '2026-05-22T12:00:00', 123, 'test', 'notas_test')
 
         # Verify the SALIDA entry was created
-        cur = db.conn.execute("SELECT * FROM transactions WHERE id = ?", (entry_id,))
+        cur = db.conn.execute("SELECT * FROM milk_entries WHERE id = ?", (entry_id,))
         row = cur.fetchone()
         assert row is not None
-        assert row["tipo"] == "SALIDA"
-        assert row["cantidad"] == 100
-        assert row["add_at"] == "2026-05-22T12:00:00"
+        assert row["entry_type"] == "SALIDA"
+        assert row["amount"] == 100
+        assert row["event_date"] == "2026-05-22T12:00:00"
         assert row["user_id"] == 123
         assert row["username"] == "test"
-        assert row["notas"] == "notas_test"
+        assert row["notes"] == "notas_test"
         # SALIDA entry should have consumed_at set (consistent with migration that sets it on all SALIDAs)
         assert row["consumed_at"] is not None
 
@@ -485,7 +485,7 @@ class TestFIFOConsumption:
         db.consume_fifo(100, '2026-05-22T11:00:00', 123, 'test')
         
         # id1 should be consumed (lower id), id2 should remain
-        cur = db.conn.execute("SELECT id, consumed_at FROM transactions WHERE tipo='ENTRADA'")
+        cur = db.conn.execute("SELECT id, consumed_at FROM milk_entries WHERE entry_type='ENTRADA'")
         rows = {row[0]: row[1] for row in cur.fetchall()}
         assert rows[id1] is not None
         assert rows[id2] is None
@@ -574,9 +574,9 @@ class TestDualDateSummary:
         entry_id = db.add_entry(
             "ENTRADA", 150, "2026-05-21T10:00:00", 123, "test_user"
         )
-        db.update_entry(entry_id, tipo="SALIDA")
+        db.update_entry(entry_id, entry_type="SALIDA")
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
             ("2026-05-22T12:00:00", entry_id),
         )
         db.conn.commit()
@@ -595,17 +595,17 @@ class TestDualDateSummary:
         entry_id = db.add_entry(
             "ENTRADA", 150, "2026-05-21T10:00:00", 123, "test_user"
         )
-        db.update_entry(entry_id, tipo="SALIDA")
+        db.update_entry(entry_id, entry_type="SALIDA")
         db.conn.execute(
-            "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+            "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
             ("2026-05-22T12:00:00", entry_id),
         )
         db.conn.commit()
 
         entries = db.get_entries_by_date("2026-05-22")
         assert len(entries) == 1
-        assert entries[0]["tipo"] == "SALIDA"
-        assert entries[0]["cantidad"] == 150
+        assert entries[0]["entry_type"] == "SALIDA"
+        assert entries[0]["amount"] == 150
 
 
 class TestUpdateEntryGuard:
@@ -627,11 +627,11 @@ class TestUpdateEntryGuard:
                 "ENTRADA", 100, "2026-05-19T10:00:00", 123
             )
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id),
             )
             db.conn.commit()
-            result = db.update_entry(entry_id, notas="nueva nota")
+            result = db.update_entry(entry_id, notes="nueva nota")
             assert result is True
         finally:
             db.close()
@@ -644,11 +644,11 @@ class TestUpdateEntryGuard:
                 "ENTRADA", 100, "2026-05-19T10:00:00", 123
             )
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id),
             )
             db.conn.commit()
-            result = db.update_entry(entry_id, add_at="2026-06-01T10:00:00")
+            result = db.update_entry(entry_id, event_date="2026-06-01T10:00:00")
             assert result is True
         finally:
             db.close()
@@ -661,11 +661,11 @@ class TestUpdateEntryGuard:
                 "ENTRADA", 100, "2026-05-19T10:00:00", 123
             )
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id),
             )
             db.conn.commit()
-            result = db.update_entry(entry_id, cantidad=999)
+            result = db.update_entry(entry_id, amount=999)
             assert result is False
         finally:
             db.close()
@@ -678,11 +678,11 @@ class TestUpdateEntryGuard:
                 "ENTRADA", 100, "2026-05-19T10:00:00", 123
             )
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id),
             )
             db.conn.commit()
-            result = db.update_entry(entry_id, tipo="SALIDA")
+            result = db.update_entry(entry_id, entry_type="SALIDA")
             assert result is False
         finally:
             db.close()
@@ -695,7 +695,7 @@ class TestUpdateEntryGuard:
                 "ENTRADA", 100, "2026-05-19T10:00:00", 123
             )
             db.conn.execute(
-                "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id),
             )
             db.conn.commit()

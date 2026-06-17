@@ -1,57 +1,28 @@
 {
-  "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/sqlite-web-service.md",
-  "started_at": "2026-06-17T08:38:22.946Z",
-  "session_ids": [
-    "ses_12d15cb59ffeJDrbsPu5A66xDp"
-  ],
-  "plan_name": "sqlite-web-service",
-  "worktree_path": null,
-  "session_origins": {},
-  "task_sessions": {
-    "todo:1": {
-      "task_key": "todo:1",
-      "task_label": "1",
-      "task_title": "Añadir servicio sqlite-web a docker-compose.yml",
-      "status": "completed",
-      "category": "quick",
-      "agent": "Sisyphus-Junior",
-      "started_at": "2026-06-17T08:38:22.946Z",
-      "ended_at": "2026-06-17T08:50:40.635Z",
-      "elapsed_ms": 737689,
-      "updated_at": "2026-06-17T08:50:40.635Z"
-    }
+  "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/rename-milk-entries.md",
+  "started_at": "2026-06-17T21:21:48.030Z",
+  "session_ids": ["ses_128a4e73dffeibOsgH3nsu7RAr"],
+  "plan_name": "rename-milk-entries",
+  "session_origins": {
+    "ses_128a4e73dffeibOsgH3nsu7RAr": "direct"
   },
-  "active_work_id": "sqlite-web-service",
-  "updated_at": "2026-06-17T08:50:40.635Z",
-  "schema_version": 2,
+  "active_work_id": "rename-milk-entries",
   "works": {
-    "sqlite-web-service": {
-      "work_id": "sqlite-web-service",
-      "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/sqlite-web-service.md",
-      "plan_name": "sqlite-web-service",
-      "started_at": "2026-06-17T08:38:22.946Z",
-      "session_ids": [
-        "ses_12d15cb59ffeJDrbsPu5A66xDp"
-      ],
-      "worktree_path": null,
-      "task_sessions": {
-        "todo:1": {
-          "task_key": "todo:1",
-          "task_label": "1",
-          "task_title": "Añadir servicio sqlite-web a docker-compose.yml",
-          "status": "completed",
-          "category": "quick",
-          "agent": "Sisyphus-Junior",
-          "started_at": "2026-06-17T08:38:22.946Z",
-          "ended_at": "2026-06-17T08:50:40.635Z",
-          "elapsed_ms": 737689,
-          "updated_at": "2026-06-17T08:50:40.635Z"
-        }
-      },
+    "rename-milk-entries": {
+      "work_id": "rename-milk-entries",
+      "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/rename-milk-entries.md",
+      "plan_name": "rename-milk-entries",
       "status": "active",
-      "updated_at": "2026-06-17T08:50:40.635Z",
-      "session_origins": {}
+      "started_at": "2026-06-17T21:21:48.030Z",
+      "session_ids": ["ses_128a4e73dffeibOsgH3nsu7RAr"],
+      "session_origins": {
+        "ses_128a4e73dffeibOsgH3nsu7RAr": "direct"
+      },
+      "worktree_path": null,
+      "agent": "atlas",
+      "task_sessions": {}
     }
   },
-  "status": "active"
+  "schema_version": 2,
+  "updated_at": "2026-06-17T21:21:48.030Z"
 }

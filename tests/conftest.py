@@ -19,12 +19,12 @@ from gaelcarebot.db import MilkDatabase
 def sample_entry() -> dict[str, Any]:
     """Return a sample ENTRADA dictionary for use in tests."""
     return {
-        "tipo": "ENTRADA",
-        "cantidad": 200,
-        "add_at": "2026-05-19T10:00:00",
+        "entry_type": "ENTRADA",
+        "amount": 200,
+        "event_date": "2026-05-19T10:00:00",
         "user_id": 123,
         "username": "test_user",
-        "notas": None,
+        "notes": None,
     }
 
 
