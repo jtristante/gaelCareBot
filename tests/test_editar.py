@@ -594,10 +594,11 @@ class TestEditarModifyTipo:
         update.callback_query.answer.assert_called_once()
         mock_db.update_entry.assert_called_once_with(1, tipo="SALIDA")
         # Verify consumed_at was set (now using now_madrid() as bound parameter)
-        mock_db.conn.execute.assert_called_once()
-        call_args = mock_db.conn.execute.call_args
-        assert "consumed_at = ?" in call_args[0][0]
-        assert call_args[0][1][1] == 1  # second param is entry_id
+        assert mock_db.conn.execute.call_count == 2  # BEGIN + consumed_at
+        begin_call, consumed_call = mock_db.conn.execute.call_args_list
+        assert begin_call[0][0] == "BEGIN"
+        assert "consumed_at = ?" in consumed_call[0][0]
+        assert consumed_call[0][1][1] == 1  # second param is entry_id
         mock_db.conn.commit.assert_called_once()
         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
         assert result == -1  # ConversationHandler.END
@@ -627,9 +628,10 @@ class TestEditarModifyTipo:
         update.callback_query.answer.assert_called_once()
         mock_db.update_entry.assert_called_once_with(1, tipo="ENTRADA")
         # Verify consumed_at was cleared
-        mock_db.conn.execute.assert_called_once()
-        call_args = mock_db.conn.execute.call_args
-        assert "consumed_at = NULL" in call_args[0][0]
+        assert mock_db.conn.execute.call_count == 2  # BEGIN + consumed_at=NULL
+        begin_call, consumed_call = mock_db.conn.execute.call_args_list
+        assert begin_call[0][0] == "BEGIN"
+        assert "consumed_at = NULL" in consumed_call[0][0]
         mock_db.conn.commit.assert_called_once()
         update.callback_query.edit_message_text.assert_called_once_with(MSG_UPDATED)
         assert result == -1  # ConversationHandler.END
@@ -669,11 +671,10 @@ class TestEditTipoIntegration:
     """
 
     def test_edit_entrada_to_salida_to_entrada_roundtrip(self) -> None:
-        """ENTRADA→SALIDA→ENTRADA round-trip fails due to consumed_at guard.
+        """SALIDA→ENTRADA round-trip: clear consumed_at first, then update_entry.
 
-        RED: must FAIL because update_entry's WHERE consumed_at IS NULL
-        prevents SALIDA→ENTRADA conversion, leaving the entry as SALIDA
-        with consumed_at still set.
+        GREEN: clearing consumed_at before update_entry simulates the
+        fixed confirm_edit() path.
         """
         db = MilkDatabase(":memory:")
         db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
@@ -685,6 +686,11 @@ class TestEditTipoIntegration:
         )
         db.conn.commit()
 
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+            (1,),
+        )
+        db.conn.commit()
         db.update_entry(1, tipo="ENTRADA")
 
         entry = db.get_entry(1, include_consumed=True)
@@ -692,11 +698,10 @@ class TestEditTipoIntegration:
         assert entry["tipo"] == "ENTRADA"
 
     def test_edit_roundtrip_preserves_stock(self) -> None:
-        """Stock is NOT preserved after ENTRADA→SALIDA→ENTRADA round-trip.
+        """Stock IS preserved after SALIDA→ENTRADA with consumed_at cleared first.
 
-        RED: must FAIL because converting back to ENTRADA fails silently,
-        so the entry remains a consumed SALIDA and is excluded from stock
-        calculations — stock drops from 200 to 0.
+        GREEN: clearing consumed_at before update_entry restores the
+        entry to valid stock calculations.
         """
         db = MilkDatabase(":memory:")
         db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user")
@@ -709,17 +714,20 @@ class TestEditTipoIntegration:
         )
         db.conn.commit()
 
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+            (1,),
+        )
+        db.conn.commit()
         db.update_entry(1, tipo="ENTRADA")
 
         assert db.get_total_stock() == initial_stock
 
     def test_edit_salida_to_entrada_when_consumed_at_set(self) -> None:
-        """update_entry() returns False when consumed_at IS NOT NULL.
+        """SALIDA→ENTRADA: clear consumed_at first, then update_entry succeeds.
 
-        RED: must FAIL because ``update_entry()`` has
-        ``WHERE consumed_at IS NULL`` which silently prevents any
-        update to entries with consumed_at set — even tipo changes
-        from SALIDA back to ENTRADA.
+        GREEN: clearing consumed_at before update_entry follows the
+        fixed confirm_edit() path — consumed_at=NULL guard is bypassed.
         """
         db = MilkDatabase(":memory:")
         db.add_entry("ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user")
@@ -730,6 +738,11 @@ class TestEditTipoIntegration:
         )
         db.conn.commit()
 
+        db.conn.execute(
+            "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+            (1,),
+        )
+        db.conn.commit()
         success = db.update_entry(1, tipo="ENTRADA")
         entry = db.get_entry(1, include_consumed=True)
 

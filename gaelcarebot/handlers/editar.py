@@ -348,39 +348,61 @@ async def confirm_edit(update: Update, context: Any) -> int:
         return ConversationHandler.END
 
     try:
-        # Prepare update kwargs
-        update_kwargs = {field_name: new_value}
-
-        # For fecha field, we need to preserve the time component
-        if field_name == "fecha":
-            original_entry = context.user_data.get("edit_entry_original", {})
-            original_add_at = original_entry.get("add_at", "")
-            if original_add_at and "T" in original_add_at:
-                original_time = original_add_at.split("T")[1]
-                new_value = f"{new_value}T{original_time}"
-            else:
-                new_value = f"{new_value}T12:00:00"
-            update_kwargs = {"add_at": new_value}
-
-        # Update the entry
-        success = db.update_entry(entry_id, **update_kwargs)
-
-        # Handle consumed_at for tipo changes
-        if success and field_name == "tipo":
+        if field_name == "tipo":
             original_entry = context.user_data.get("edit_entry_original", {})
             original_tipo = original_entry.get("tipo", "")
-            if original_tipo == "ENTRADA" and new_value == "SALIDA":
-                db.conn.execute(
-                    "UPDATE transactions SET consumed_at = ? WHERE id = ?",
-                    (now_madrid(), entry_id)
-                )
-                db.conn.commit()
-            elif original_tipo == "SALIDA" and new_value == "ENTRADA":
-                db.conn.execute(
-                    "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
-                    (entry_id,)
-                )
-                db.conn.commit()
+            if original_tipo == "SALIDA" and new_value == "ENTRADA":
+                # SALIDA → ENTRADA: clear consumed_at first, then update tipo
+                db.conn.execute("BEGIN")
+                try:
+                    db.conn.execute(
+                        "UPDATE transactions SET consumed_at = NULL WHERE id = ?",
+                        (entry_id,),
+                    )
+                    success = db.update_entry(entry_id, tipo="ENTRADA")
+                    if not success:
+                        raise ValueError(
+                            "update_entry failed after clearing consumed_at"
+                        )
+                    db.conn.commit()
+                except Exception:
+                    db.conn.rollback()
+                    success = False
+            elif original_tipo == "ENTRADA" and new_value == "SALIDA":
+                # ENTRADA → SALIDA: update tipo first, then set consumed_at
+                db.conn.execute("BEGIN")
+                try:
+                    success = db.update_entry(entry_id, tipo="SALIDA")
+                    if not success:
+                        raise ValueError(
+                            "update_entry failed for SALIDA change"
+                        )
+                    db.conn.execute(
+                        "UPDATE transactions SET consumed_at = ? WHERE id = ?",
+                        (now_madrid(), entry_id),
+                    )
+                    db.conn.commit()
+                except Exception:
+                    db.conn.rollback()
+                    success = False
+            else:
+                # Same-value or unhandled: standard update (no consumed_at change)
+                success = db.update_entry(entry_id, **{field_name: new_value})
+        else:
+            # Non-tipo fields: standard update
+            update_kwargs = {field_name: new_value}
+
+            if field_name == "fecha":
+                original_entry = context.user_data.get("edit_entry_original", {})
+                original_add_at = original_entry.get("add_at", "")
+                if original_add_at and "T" in original_add_at:
+                    original_time = original_add_at.split("T")[1]
+                    new_value = f"{new_value}T{original_time}"
+                else:
+                    new_value = f"{new_value}T12:00:00"
+                update_kwargs = {"add_at": new_value}
+
+            success = db.update_entry(entry_id, **update_kwargs)
 
         if success:
             await query.edit_message_text(MSG_UPDATED)
