@@ -1,4 +1,4 @@
-"""Tests for the /editar command handler."""
+"""Tests for the /edit command handler."""
 
 from __future__ import annotations
 
@@ -6,21 +6,21 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from gaelcarebot.handlers.editar import (
+from gaelcarebot.handlers.edit import (
     SELECTING_ENTRY,
     EDITING_FIELD,
     EDITING_VALUE,
     CONFIRMING,
-    SELECTING_TIPO,
-    editar_start,
+    SELECTING_ENTRY_TYPE,
+    edit_start,
     entry_selected,
     field_selected,
-    tipo_selected,
+    entry_type_selected,
     receive_value,
     confirm_edit,
     cancel,
-    _validate_cantidad,
-    _validate_fecha,
+    _validate_amount,
+    _validate_date,
 )
 from gaelcarebot.db import MilkDatabase, now_madrid
 from gaelcarebot.messages import (
@@ -37,56 +37,56 @@ from gaelcarebot.messages import (
     BTN_CANCEL,
     BTN_CONFIRM,
     BTN_DENY,
-    BTN_EDIT_CANTIDAD,
-    BTN_EDIT_FECHA,
-    BTN_EDIT_NOTAS,
-    BTN_EDIT_TIPO,
+    BTN_EDIT_AMOUNT,
+    BTN_EDIT_DATE,
+    BTN_EDIT_NOTES,
+    BTN_EDIT_TYPE,
 )
 
 
-class TestValidateCantidad:
-    """Tests for the _validate_cantidad helper function."""
+class TestValidateAmount:
+    """Tests for the _validate_amount helper function."""
 
     def test_valid_positive_integer(self):
-        assert _validate_cantidad("100") == 100
-        assert _validate_cantidad("1") == 1
-        assert _validate_cantidad("999999") == 999999
+        assert _validate_amount("100") == 100
+        assert _validate_amount("1") == 1
+        assert _validate_amount("999999") == 999999
 
     def test_zero_is_invalid(self):
-        assert _validate_cantidad("0") is None
+        assert _validate_amount("0") is None
 
     def test_negative_is_invalid(self):
-        assert _validate_cantidad("-50") is None
+        assert _validate_amount("-50") is None
 
     def test_non_numeric_is_invalid(self):
-        assert _validate_cantidad("abc") is None
-        assert _validate_cantidad("12.5") is None
-        assert _validate_cantidad("") is None
+        assert _validate_amount("abc") is None
+        assert _validate_amount("12.5") is None
+        assert _validate_amount("") is None
 
 
-class TestValidateFecha:
-    """Tests for the _validate_fecha helper function."""
+class TestValidateDate:
+    """Tests for the _validate_date helper function."""
 
     def test_valid_date(self):
-        result = _validate_fecha("19/05/2026")
+        result = _validate_date("19/05/2026")
         assert result == "2026-05-19"
 
     def test_invalid_format(self):
-        assert _validate_fecha("2026-05-19") is None
-        assert _validate_fecha("19-05-2026") is None
-        assert _validate_fecha("05/19/2026") is None
+        assert _validate_date("2026-05-19") is None
+        assert _validate_date("19-05-2026") is None
+        assert _validate_date("05/19/2026") is None
 
     def test_invalid_calendar_date(self):
-        assert _validate_fecha("32/13/2026") is None
-        assert _validate_fecha("31/02/2026") is None
-        assert _validate_fecha("00/05/2026") is None
+        assert _validate_date("32/13/2026") is None
+        assert _validate_date("31/02/2026") is None
+        assert _validate_date("00/05/2026") is None
 
     def test_empty_string(self):
-        assert _validate_fecha("") is None
+        assert _validate_date("") is None
 
 
-class TestEditarStart:
-    """Tests for the editar_start handler."""
+class TestEditStart:
+    """Tests for the edit_start handler."""
 
     @pytest.fixture(autouse=True)
     def setup_auth(self, patch_config):
@@ -132,22 +132,22 @@ class TestEditarStart:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_start_empty(self, setup_update, setup_context, mock_db):
-        """Test /editar with no entries - should show ERROR_NO_ENTRIES."""
+    async def test_edit_start_empty(self, setup_update, setup_context, mock_db):
+        """Test /edit with no entries - should show ERROR_NO_ENTRIES."""
         mock_db.get_all_entries.return_value = []
 
         update = setup_update(123)
         ctx = setup_context()
 
-        result = await editar_start(update, ctx)
+        result = await edit_start(update, ctx)
 
         mock_db.get_all_entries.assert_called_once_with(order_by="event_date DESC", include_consumed=True)
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == -1  # ConversationHandler.END
 
     @pytest.mark.asyncio
-    async def test_editar_start_with_entries(self, setup_update, setup_context, mock_db):
-        """Test /editar with entries - should show entry selection keyboard."""
+    async def test_edit_start_with_entries(self, setup_update, setup_context, mock_db):
+        """Test /edit with entries - should show entry selection keyboard."""
         mock_db.get_all_entries.return_value = [
             {"id": 1, "entry_type": "ENTRADA", "event_date": "2026-05-19T10:00:00", "amount": 200},
             {"id": 2, "entry_type": "SALIDA", "event_date": "2026-05-18T12:00:00", "amount": 100},
@@ -156,7 +156,7 @@ class TestEditarStart:
         update = setup_update(123)
         ctx = setup_context()
 
-        result = await editar_start(update, ctx)
+        result = await edit_start(update, ctx)
 
         mock_db.get_all_entries.assert_called_once_with(order_by="event_date DESC", include_consumed=True)
         update.message.reply_text.assert_called_once()
@@ -165,7 +165,7 @@ class TestEditarStart:
         assert result == SELECTING_ENTRY
 
 
-class TestEditarSelectEntry:
+class TestEditSelectEntry:
     """Tests for the entry_selected handler."""
 
     @pytest.fixture
@@ -204,7 +204,7 @@ class TestEditarSelectEntry:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_select_entry(self, setup_callback_update, setup_context, mock_db):
+    async def test_edit_select_entry(self, setup_callback_update, setup_context, mock_db):
         """Test selecting an entry - should show field selection."""
         mock_db.get_entry.return_value = {
             "id": 1,
@@ -228,8 +228,8 @@ class TestEditarSelectEntry:
         assert result == EDITING_FIELD
 
 
-class TestEditarModifyCantidad:
-    """Tests for modifying the cantidad field."""
+class TestEditModifyAmount:
+    """Tests for modifying the amount field."""
 
     @pytest.fixture
     def mock_db(self):
@@ -281,9 +281,9 @@ class TestEditarModifyCantidad:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_modify_cantidad(self, setup_callback_update, setup_message_update, setup_context, mock_db):
-        """Test modifying cantidad field with valid value."""
-        # Step 1: Select the cantidad field
+    async def test_edit_modify_amount(self, setup_callback_update, setup_message_update, setup_context, mock_db):
+        """Test modifying amount field with valid value."""
+        # Step 1: Select the amount field
         update = setup_callback_update("field_amount")
         ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"amount": 100}})
 
@@ -293,7 +293,7 @@ class TestEditarModifyCantidad:
         assert ctx.user_data["edit_field"] == "amount"
         assert result == EDITING_VALUE
 
-        # Step 2: Enter new cantidad value
+        # Step 2: Enter new amount value
         update = setup_message_update("150")
 
         result = await receive_value(update, ctx)
@@ -313,8 +313,8 @@ class TestEditarModifyCantidad:
         assert result == -1  # ConversationHandler.END
 
 
-class TestEditarModifyNotas:
-    """Tests for modifying the notas field."""
+class TestEditModifyNotes:
+    """Tests for modifying the notes field."""
 
     @pytest.fixture
     def mock_db(self):
@@ -366,9 +366,9 @@ class TestEditarModifyNotas:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_modify_notas(self, setup_callback_update, setup_message_update, setup_context, mock_db):
-        """Test modifying notas field with valid value."""
-        # Step 1: Select the notas field
+    async def test_edit_modify_notes(self, setup_callback_update, setup_message_update, setup_context, mock_db):
+        """Test modifying notes field with valid value."""
+        # Step 1: Select the notes field
         update = setup_callback_update("field_notes")
         ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"notes": None}})
 
@@ -378,7 +378,7 @@ class TestEditarModifyNotas:
         assert ctx.user_data["edit_field"] == "notes"
         assert result == EDITING_VALUE
 
-        # Step 2: Enter new notas value
+        # Step 2: Enter new notes value
         update = setup_message_update("Nueva nota de prueba")
 
         result = await receive_value(update, ctx)
@@ -398,7 +398,7 @@ class TestEditarModifyNotas:
         assert result == -1  # ConversationHandler.END
 
 
-class TestEditarCancel:
+class TestEditCancel:
     """Tests for canceling the edit conversation."""
 
     @pytest.fixture
@@ -430,7 +430,7 @@ class TestEditarCancel:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_cancel(self, setup_callback_update, setup_context):
+    async def test_edit_cancel(self, setup_callback_update, setup_context):
         """Test canceling the conversation."""
         update = setup_callback_update()
         ctx = setup_context({"edit_entry_id": 1, "edit_field": "amount"})
@@ -442,8 +442,8 @@ class TestEditarCancel:
         assert result == -1  # ConversationHandler.END
 
 
-class TestEditarInvalidCantidad:
-    """Tests for invalid cantidad validation."""
+class TestEditInvalidAmount:
+    """Tests for invalid amount validation."""
 
     @pytest.fixture
     def mock_db(self):
@@ -495,16 +495,16 @@ class TestEditarInvalidCantidad:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_invalid_cantidad(self, setup_callback_update, setup_message_update, setup_context, mock_db):
-        """Test entering an invalid cantidad value."""
-        # Step 1: Select the cantidad field
+    async def test_edit_invalid_amount(self, setup_callback_update, setup_message_update, setup_context, mock_db):
+        """Test entering an invalid amount value."""
+        # Step 1: Select the amount field
         update = setup_callback_update("field_amount")
         ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"amount": 100}})
 
         result = await field_selected(update, ctx)
         assert result == EDITING_VALUE
 
-        # Step 2: Enter invalid cantidad value (negative)
+        # Step 2: Enter invalid amount value (negative)
         update = setup_message_update("-50")
 
         result = await receive_value(update, ctx)
@@ -513,8 +513,8 @@ class TestEditarInvalidCantidad:
         assert result == EDITING_VALUE  # Stay in EDITING_VALUE state
 
 
-class TestEditarModifyTipo:
-    """Tests for modifying the tipo field."""
+class TestEditModifyEntryType:
+    """Tests for modifying the entry_type field."""
 
     @pytest.fixture
     def mock_db(self):
@@ -555,8 +555,8 @@ class TestEditarModifyTipo:
         return _create
 
     @pytest.mark.asyncio
-    async def test_editar_select_tipo_field(self, setup_callback_update, setup_context):
-        """Test selecting tipo field shows ENTRADA/SALIDA options."""
+    async def test_edit_select_entry_type_field(self, setup_callback_update, setup_context):
+        """Test selecting entry_type field shows ENTRADA/SALIDA options."""
         update = setup_callback_update("field_entry_type")
         ctx = setup_context({"edit_entry_id": 1, "edit_entry_original": {"entry_type": "ENTRADA"}})
 
@@ -564,14 +564,14 @@ class TestEditarModifyTipo:
 
         update.callback_query.answer.assert_called_once()
         assert ctx.user_data["edit_field"] == "entry_type"
-        assert result == SELECTING_TIPO
+        assert result == SELECTING_ENTRY_TYPE
         # Verify the keyboard has ENTRADA and SALIDA options
         call_args = update.callback_query.edit_message_text.call_args
         assert "Selecciona el nuevo tipo:" in call_args[0][0]
 
     @pytest.mark.asyncio
-    async def test_editar_tipo_entrada_to_salida(self, setup_callback_update, setup_context, mock_db):
-        """Test changing tipo from ENTRADA to SALIDA sets consumed_at."""
+    async def test_edit_entry_type_entrada_to_salida(self, setup_callback_update, setup_context, mock_db):
+        """Test changing entry_type from ENTRADA to SALIDA sets consumed_at."""
         # Step 1: Select SALIDA
         update = setup_callback_update("entry_type_SALIDA")
         ctx = setup_context({
@@ -580,7 +580,7 @@ class TestEditarModifyTipo:
             "edit_field": "entry_type"
         })
 
-        result = await tipo_selected(update, ctx)
+        result = await entry_type_selected(update, ctx)
 
         update.callback_query.answer.assert_called_once()
         assert ctx.user_data["edit_new_value"] == "SALIDA"
@@ -604,8 +604,8 @@ class TestEditarModifyTipo:
         assert result == -1  # ConversationHandler.END
 
     @pytest.mark.asyncio
-    async def test_editar_tipo_salida_to_entrada(self, setup_callback_update, setup_context, mock_db):
-        """Test changing tipo from SALIDA to ENTRADA clears consumed_at."""
+    async def test_edit_entry_type_salida_to_entrada(self, setup_callback_update, setup_context, mock_db):
+        """Test changing entry_type from SALIDA to ENTRADA clears consumed_at."""
         # Step 1: Select ENTRADA
         update = setup_callback_update("entry_type_ENTRADA")
         ctx = setup_context({
@@ -614,7 +614,7 @@ class TestEditarModifyTipo:
             "edit_field": "entry_type"
         })
 
-        result = await tipo_selected(update, ctx)
+        result = await entry_type_selected(update, ctx)
 
         update.callback_query.answer.assert_called_once()
         assert ctx.user_data["edit_new_value"] == "ENTRADA"
@@ -637,8 +637,8 @@ class TestEditarModifyTipo:
         assert result == -1  # ConversationHandler.END
 
     @pytest.mark.asyncio
-    async def test_editar_tipo_same_value_no_consumed_at_change(self, setup_callback_update, setup_context, mock_db):
-        """Test changing tipo to same value doesn't modify consumed_at."""
+    async def test_edit_entry_type_same_value_no_consumed_at_change(self, setup_callback_update, setup_context, mock_db):
+        """Test changing entry_type to same value doesn't modify consumed_at."""
         # Select ENTRADA when already ENTRADA
         update = setup_callback_update("entry_type_ENTRADA")
         ctx = setup_context({
@@ -647,7 +647,7 @@ class TestEditarModifyTipo:
             "edit_field": "entry_type"
         })
 
-        result = await tipo_selected(update, ctx)
+        result = await entry_type_selected(update, ctx)
         assert result == CONFIRMING
 
         # Confirm the edit
@@ -660,8 +660,8 @@ class TestEditarModifyTipo:
         mock_db.conn.commit.assert_not_called()
 
 
-class TestEditTipoIntegration:
-    """RED tests — integration tests for editing tipo field with a REAL MilkDatabase.
+class TestEditEntryTypeIntegration:
+    """RED tests — integration tests for editing entry_type field with a REAL MilkDatabase.
 
     These tests MUST FAIL because ``update_entry()`` has
     ``WHERE consumed_at IS NULL`` at ``db.py:237``, which silently

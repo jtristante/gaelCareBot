@@ -25,6 +25,6 @@ async def total_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     stock = db.get_total_stock()
 
     if stock > 0:
-        await update.message.reply_text(MSG_STOCK_TOTAL.format(cantidad=stock))
+        await update.message.reply_text(MSG_STOCK_TOTAL.format(amount=stock))
     else:
         await update.message.reply_text(MSG_STOCK_TOTAL_ZERO)

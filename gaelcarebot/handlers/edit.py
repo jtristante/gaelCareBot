@@ -1,4 +1,4 @@
-"""Handler for the /editar command - interactive entry editing."""
+"""Handler for the /edit command - interactive entry editing."""
 
 from __future__ import annotations
 
@@ -25,10 +25,10 @@ from gaelcarebot.messages import (
     BTN_CANCEL,
     BTN_CONFIRM,
     BTN_DENY,
-    BTN_EDIT_CANTIDAD,
-    BTN_EDIT_FECHA,
-    BTN_EDIT_NOTAS,
-    BTN_EDIT_TIPO,
+    BTN_EDIT_AMOUNT,
+    BTN_EDIT_DATE,
+    BTN_EDIT_NOTES,
+    BTN_EDIT_TYPE,
     MSG_CANCELLED,
     MSG_CONFIRM_EDIT,
     MSG_ENTER_NEW_VALUE,
@@ -44,11 +44,11 @@ SELECTING_ENTRY = 0
 EDITING_FIELD = 1
 EDITING_VALUE = 2
 CONFIRMING = 3
-SELECTING_TIPO = 4
+SELECTING_ENTRY_TYPE = 4
 
 
 @authorized_only
-async def editar_start(update: Update, context: Any) -> int:
+async def edit_start(update: Update, context: Any) -> int:
     """Start the edit conversation - show last 20 entries.
 
     Displays entries as inline buttons. If no entries exist,
@@ -71,9 +71,9 @@ async def editar_start(update: Update, context: Any) -> int:
     keyboard = []
     for entry in entries:
         # Format: ID - Tipo - Fecha - Cantidad
-        fecha = entry["event_date"][:10] if entry["event_date"] else "N/A"
-        tipo_label = "ENT" if entry["entry_type"] == "ENTRADA" else "SAL"
-        label = f"#{entry['id']} [{tipo_label}] {fecha} - {entry['amount']}ml"
+        date = entry["event_date"][:10] if entry["event_date"] else "N/A"
+        entry_type_label = "ENT" if entry["entry_type"] == "ENTRADA" else "SAL"
+        label = f"#{entry['id']} [{entry_type_label}] {date} - {entry['amount']}ml"
         keyboard.append([InlineKeyboardButton(label, callback_data=f"edit_{entry['id']}")])
 
     # Add cancel button
@@ -121,10 +121,10 @@ async def entry_selected(update: Update, context: Any) -> int:
 
     # Show field selection keyboard
     keyboard = [
-        [InlineKeyboardButton(BTN_EDIT_CANTIDAD, callback_data="field_amount")],
-        [InlineKeyboardButton(BTN_EDIT_FECHA, callback_data="field_fecha")],
-        [InlineKeyboardButton(BTN_EDIT_NOTAS, callback_data="field_notes")],
-        [InlineKeyboardButton(BTN_EDIT_TIPO, callback_data="field_entry_type")],
+        [InlineKeyboardButton(BTN_EDIT_AMOUNT, callback_data="field_amount")],
+        [InlineKeyboardButton(BTN_EDIT_DATE, callback_data="field_date")],
+        [InlineKeyboardButton(BTN_EDIT_NOTES, callback_data="field_notes")],
+        [InlineKeyboardButton(BTN_EDIT_TYPE, callback_data="field_entry_type")],
         [InlineKeyboardButton(BTN_CANCEL, callback_data="cancel")],
     ]
 
@@ -154,10 +154,10 @@ async def field_selected(update: Update, context: Any) -> int:
 
     # Map callback names to display names
     field_display_map = {
-        "amount": BTN_EDIT_CANTIDAD,
-        "fecha": BTN_EDIT_FECHA,
-        "notes": BTN_EDIT_NOTAS,
-        "entry_type": BTN_EDIT_TIPO,
+        "amount": BTN_EDIT_AMOUNT,
+        "date": BTN_EDIT_DATE,
+        "notes": BTN_EDIT_NOTES,
+        "entry_type": BTN_EDIT_TYPE,
     }
 
     context.user_data["edit_field"] = field_name
@@ -172,16 +172,16 @@ async def field_selected(update: Update, context: Any) -> int:
         await query.edit_message_text(
             "Selecciona el nuevo tipo:", reply_markup=InlineKeyboardMarkup(keyboard)
         )
-        return SELECTING_TIPO
+        return SELECTING_ENTRY_TYPE
 
     await query.edit_message_text(
-        MSG_ENTER_NEW_VALUE.format(campo=field_display_map.get(field_name, field_name))
+        MSG_ENTER_NEW_VALUE.format(field=field_display_map.get(field_name, field_name))
     )
     return EDITING_VALUE
 
 
-async def tipo_selected(update: Update, context: Any) -> int:
-    """Handle tipo selection and show confirmation."""
+async def entry_type_selected(update: Update, context: Any) -> int:
+    """Handle entry type selection and show confirmation."""
     query = update.callback_query
     await query.answer()
 
@@ -191,30 +191,30 @@ async def tipo_selected(update: Update, context: Any) -> int:
         await query.edit_message_text(MSG_CANCELLED)
         return ConversationHandler.END
 
-    # Parse tipo value from callback data (format: tipo_{ENTRADA|SALIDA})
+    # Parse entry type value from callback data (format: tipo_{ENTRADA|SALIDA})
     try:
-        tipo_value = callback_data.rsplit("_", 1)[1]
+        entry_type_value = callback_data.rsplit("_", 1)[1]
     except IndexError:
         await query.edit_message_text(MSG_CANCELLED)
         return ConversationHandler.END
 
-    # Store the selected tipo
-    context.user_data["edit_new_value"] = tipo_value
-    context.user_data["edit_new_value_raw"] = tipo_value
+    # Store the selected entry type
+    context.user_data["edit_new_value"] = entry_type_value
+    context.user_data["edit_new_value_raw"] = entry_type_value
 
     # Get original entry for display
     entry_id = context.user_data.get("edit_entry_id")
     original_entry = context.user_data.get("edit_entry_original", {})
-    fecha = original_entry.get("event_date", "N/A")[:10] if original_entry.get("event_date") else "N/A"
+    date = original_entry.get("event_date", "N/A")[:10] if original_entry.get("event_date") else "N/A"
 
     # Build confirmation message
     entry_info = (
         f"ID: #{entry_id}\n"
         f"Tipo: {original_entry.get('entry_type', 'N/A')}\n"
         f"Cantidad: {original_entry.get('amount', 'N/A')}ml\n"
-        f"Fecha: {fecha}\n"
+        f"Fecha: {date}\n"
         f"Notas: {original_entry.get('notes') or 'Ninguna'}\n\n"
-        f"Nuevo valor para tipo: {tipo_value}"
+        f"Nuevo valor para tipo: {entry_type_value}"
     )
 
     keyboard = [
@@ -243,12 +243,12 @@ async def receive_value(update: Update, context: Any) -> int:
     # Validate based on field type
     validated_value = None
     if field_name == "amount":
-        validated_value = _validate_cantidad(new_value)
+        validated_value = _validate_amount(new_value)
         if validated_value is None:
             await update.message.reply_text(ERROR_INVALID_AMOUNT)
             return EDITING_VALUE
-    elif field_name == "fecha":
-        validated_value = _validate_fecha(new_value)
+    elif field_name == "date":
+        validated_value = _validate_date(new_value)
         if validated_value is None:
             await update.message.reply_text(ERROR_INVALID_DATE)
             return EDITING_VALUE
@@ -261,14 +261,14 @@ async def receive_value(update: Update, context: Any) -> int:
 
     # Get original entry for display
     original_entry = context.user_data.get("edit_entry_original", {})
-    fecha = original_entry.get("event_date", "N/A")[:10] if original_entry.get("event_date") else "N/A"
+    date = original_entry.get("event_date", "N/A")[:10] if original_entry.get("event_date") else "N/A"
 
     # Build confirmation message
     entry_info = (
         f"ID: #{entry_id}\n"
         f"Tipo: {original_entry.get('entry_type', 'N/A')}\n"
         f"Cantidad: {original_entry.get('amount', 'N/A')}ml\n"
-        f"Fecha: {fecha}\n"
+        f"Fecha: {date}\n"
         f"Notas: {original_entry.get('notes') or 'Ninguna'}\n\n"
         f"Nuevo valor para {field_name}: {new_value}"
     )
@@ -285,22 +285,22 @@ async def receive_value(update: Update, context: Any) -> int:
     return CONFIRMING
 
 
-def _validate_cantidad(value: str) -> int | None:
-    """Validate cantidad is a positive integer.
+def _validate_amount(value: str) -> int | None:
+    """Validate amount is a positive integer.
 
     Returns the integer value if valid, None otherwise.
     """
     try:
-        cantidad = int(value)
-        if cantidad <= 0:
+        amount = int(value)
+        if amount <= 0:
             return None
-        return cantidad
+        return amount
     except (ValueError, TypeError):
         return None
 
 
-def _validate_fecha(value: str) -> str | None:
-    """Validate fecha is in DD/MM/YYYY format.
+def _validate_date(value: str) -> str | None:
+    """Validate date is in DD/MM/YYYY format.
 
     Returns ISO format date string if valid, None otherwise.
     """
@@ -392,7 +392,7 @@ async def confirm_edit(update: Update, context: Any) -> int:
             # Non-tipo fields: standard update
             update_kwargs = {field_name: new_value}
 
-            if field_name == "fecha":
+            if field_name == "date":
                 original_entry = context.user_data.get("edit_entry_original", {})
                 original_event_date = original_entry.get("event_date", "")
                 if original_event_date and "T" in original_event_date:
@@ -442,8 +442,8 @@ def _clear_edit_data(context: Any) -> None:
 
 
 # Create the ConversationHandler
-editar_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("editar", editar_start)],
+edit_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("editar", edit_start)],
     states={
         SELECTING_ENTRY: [
             CallbackQueryHandler(entry_selected, pattern=r"^edit_\d+$"),
@@ -456,8 +456,8 @@ editar_conv_handler = ConversationHandler(
         EDITING_VALUE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, receive_value),
         ],
-        SELECTING_TIPO: [
-            CallbackQueryHandler(tipo_selected, pattern=r"^tipo_\w+$"),
+        SELECTING_ENTRY_TYPE: [
+            CallbackQueryHandler(entry_type_selected, pattern=r"^tipo_\w+$"),
             CallbackQueryHandler(cancel, pattern="^cancel$"),
         ],
         CONFIRMING: [

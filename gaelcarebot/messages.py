@@ -55,13 +55,13 @@ ERROR_FUTURE_DATE = "❌ No se permiten fechas futuras."
 # ── Success messages ────────────────────────────────────────────────────────
 
 # Confirmation after adding milk expression.
-MSG_ADDED = "✅ {cantidad} ml de leche añadidos el {fecha}."
+MSG_ADDED = "✅ {amount} ml de leche añadidos el {date}."
 
 # Confirmation after registering consumption.
-MSG_CONSUMED = "🍼 {cantidad} ml de leche consumidos el {fecha}."
+MSG_CONSUMED = "🍼 {amount} ml de leche consumidos el {date}."
 
 # Current total stock (positive balance).
-MSG_STOCK_TOTAL = "📊 Stock total: {cantidad} ml"
+MSG_STOCK_TOTAL = "📊 Stock total: {amount} ml"
 
 # Current total stock when balance is zero.
 MSG_STOCK_TOTAL_ZERO = "📊 Stock total: 0 ml. ¡Es hora de extraer!"
@@ -93,7 +93,7 @@ MSG_TIMEOUT = "⏰ Tiempo de espera agotado. Operación cancelada."
 MSG_SELECT_FIELD = "Selecciona el campo a editar:"
 
 # Prompt to enter a new value for a specific field.
-MSG_ENTER_NEW_VALUE = "Introduce el nuevo valor para '{campo}':"
+MSG_ENTER_NEW_VALUE = "Introduce el nuevo valor para '{field}':"
 
 # Prompt for amount when /agregar is used without arguments (interactive mode).
 MSG_PROMPT_AMOUNT = "¿Cuántos ml quieres añadir?"
@@ -104,13 +104,13 @@ MSG_CONFIRM_EDIT = "¿Confirmar cambios?\n\n{entry_info}"
 # ── Summary messages ────────────────────────────────────────────────────────
 
 # Header for day summary, with date.
-SUMMARY_HEADER = "📋 Resumen del día {fecha}:"
+SUMMARY_HEADER = "📋 Resumen del día {date}:"
 
 # Line item for milk added (expression) in the summary.
-SUMMARY_ENTRADAS = "  +{cantidad} ml (extracción) - {responsable}"
+SUMMARY_ADDITIONS = "  +{amount} ml (extracción) - {user}"
 
 # Line item for milk consumed in the summary.
-SUMMARY_SALIDAS = "  -{cantidad} ml (consumo) - {responsable}"
+SUMMARY_CONSUMPTIONS = "  -{amount} ml (consumo) - {user}"
 
 # Balance line at the end of the summary.
 SUMMARY_BALANCE = "  Balance: {balance} ml"
@@ -138,13 +138,13 @@ BTN_CONFIRM = "✅ Sí"
 BTN_DENY = "No"
 
 # Edit button for the "cantidad" field.
-BTN_EDIT_CANTIDAD = "Cantidad"
+BTN_EDIT_AMOUNT = "Cantidad"
 
 # Edit button for the "fecha" field.
-BTN_EDIT_FECHA = "Fecha"
+BTN_EDIT_DATE = "Fecha"
 
 # Edit button for the "notas" field.
-BTN_EDIT_NOTAS = "Notas"
+BTN_EDIT_NOTES = "Notas"
 
 # Edit button for the "tipo" field.
-BTN_EDIT_TIPO = "Tipo"
+BTN_EDIT_TYPE = "Tipo"

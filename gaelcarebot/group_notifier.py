@@ -13,11 +13,11 @@ import pytz
 
 from gaelcarebot.config import Config
 from gaelcarebot.messages import (
+    SUMMARY_ADDITIONS,
     SUMMARY_BALANCE,
-    SUMMARY_ENTRADAS,
+    SUMMARY_CONSUMPTIONS,
     SUMMARY_HEADER,
     SUMMARY_NO_ACTIVITY,
-    SUMMARY_SALIDAS,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,19 +55,19 @@ def get_daily_summary_text(db, date: str) -> str:
     dt = datetime.strptime(date, "%Y-%m-%d")
     formatted_date = dt.strftime("%d/%m/%Y")
 
-    lines = [SUMMARY_HEADER.format(fecha=formatted_date)]
+    lines = [SUMMARY_HEADER.format(date=formatted_date)]
 
     for entry in entries:
-        cantidad = entry["amount"]
-        responsable = entry.get("username") or "Desconocido"
+        amount = entry["amount"]
+        user = entry.get("username") or "Desconocido"
 
         if entry["entry_type"] == "ENTRADA":
             lines.append(
-                SUMMARY_ENTRADAS.format(cantidad=cantidad, responsable=responsable)
+                SUMMARY_ADDITIONS.format(amount=amount, user=user)
             )
         else:
             lines.append(
-                SUMMARY_SALIDAS.format(cantidad=cantidad, responsable=responsable)
+                SUMMARY_CONSUMPTIONS.format(amount=amount, user=user)
             )
 
     balance = sum(

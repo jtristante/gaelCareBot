@@ -1,75 +1,353 @@
 {
-  "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/rename-milk-entries.md",
-  "started_at": "2026-06-17T21:21:48.030Z",
+  "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/es-to-en-refactor.md",
+  "started_at": "2026-06-18T00:31:32.232Z",
   "session_ids": [
-    "ses_128a4e73dffeibOsgH3nsu7RAr",
-    "ses_1287ef2f2ffe64TXFvUFHrr1VC",
-    "ses_1287eeb17ffel2T2l5EPER0eri",
-    "ses_1287ed955ffetG1zgnfQ3sl1o9",
-    "ses_1287ecfa7ffePuc5JUQYoDW5MS"
+    "ses_127dc1893ffeMx4FInM7u9NXk2",
+    "ses_127ccb812ffeV80BUo5lKz6qTj"
   ],
-  "plan_name": "rename-milk-entries",
-  "session_origins": {
-    "ses_128a4e73dffeibOsgH3nsu7RAr": "direct",
-    "ses_1287ef2f2ffe64TXFvUFHrr1VC": "appended",
-    "ses_1287eeb17ffel2T2l5EPER0eri": "appended",
-    "ses_1287ed955ffetG1zgnfQ3sl1o9": "appended",
-    "ses_1287ecfa7ffePuc5JUQYoDW5MS": "appended"
-  },
-  "active_work_id": "rename-milk-entries",
-  "works": {
-    "rename-milk-entries": {
-      "work_id": "rename-milk-entries",
-      "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/rename-milk-entries.md",
-      "plan_name": "rename-milk-entries",
-      "status": "active",
-      "started_at": "2026-06-17T21:21:48.030Z",
-      "session_ids": [
-        "ses_128a4e73dffeibOsgH3nsu7RAr",
-        "ses_1287ef2f2ffe64TXFvUFHrr1VC",
-        "ses_1287eeb17ffel2T2l5EPER0eri",
-        "ses_1287ed955ffetG1zgnfQ3sl1o9",
-        "ses_1287ecfa7ffePuc5JUQYoDW5MS"
-      ],
-      "session_origins": {
-        "ses_128a4e73dffeibOsgH3nsu7RAr": "direct",
-        "ses_1287ef2f2ffe64TXFvUFHrr1VC": "appended",
-        "ses_1287eeb17ffel2T2l5EPER0eri": "appended",
-        "ses_1287ed955ffetG1zgnfQ3sl1o9": "appended",
-        "ses_1287ecfa7ffePuc5JUQYoDW5MS": "appended"
-      },
-      "worktree_path": null,
-      "agent": "atlas",
-      "task_sessions": {
-        "final-wave:f1": {
-          "task_key": "final-wave:f1",
-          "task_label": "F1",
-          "task_title": "**Plan Compliance Audit** — `oracle`",
-          "session_id": "ses_1287ecfa7ffePuc5JUQYoDW5MS",
-          "agent": "oracle",
-          "started_at": "2026-06-17T21:35:57.224Z",
-          "status": "running",
-          "updated_at": "2026-06-17T21:35:57.828Z"
-        }
-      },
-      "updated_at": "2026-06-17T21:35:57.828Z"
-    }
-  },
+  "plan_name": "es-to-en-refactor",
+  "status": "completed",
+  "updated_at": "2026-06-18T00:54:15.435Z",
   "schema_version": 2,
-  "updated_at": "2026-06-17T21:35:57.828Z",
+  "session_origins": {
+    "ses_127dc1893ffeMx4FInM7u9NXk2": "direct",
+    "ses_127ccb812ffeV80BUo5lKz6qTj": "appended"
+  },
   "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Rename Spanish variables in db.py",
+      "session_id": "ses_127da9f03ffeodZY6IIpGW1V0T",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-18T00:36:21.906Z",
+      "started_at": "2026-06-18T00:35:33.365Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:36:21.905Z",
+      "elapsed_ms": 48540
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Update .format() callers for new messages.py placeholders",
+      "session_id": "ses_127d75d69ffevOaijjc40B3Yu0",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-18T00:38:12.972Z",
+      "started_at": "2026-06-18T00:37:55.218Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:38:12.972Z",
+      "elapsed_ms": 17754
+    },
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "Rename Spanish identifiers in group_notifier.py",
+      "session_id": "ses_127d5bdabffeLgb1I87Bs1RJh9",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-18T00:39:12.875Z",
+      "started_at": "2026-06-18T00:39:01.331Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:39:12.875Z",
+      "elapsed_ms": 11544
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Rename agregar.py → add.py with English identifiers + remove legacy wrapper",
+      "session_id": "ses_127d4db75ffet0CrHxTXcJzMPD",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-06-18T00:42:52.817Z",
+      "started_at": "2026-06-18T00:41:44.374Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:42:52.817Z",
+      "elapsed_ms": 68443
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "Update tests for consume.py + rename test file",
+      "session_id": "ses_127d1199cffed0nFQYq8e4TCAB",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-06-18T00:46:54.710Z",
+      "started_at": "2026-06-18T00:45:45.495Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:46:54.710Z",
+      "elapsed_ms": 69215
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "Update tests for add.py + rename test file",
+      "session_id": "ses_127d13725ffeRI4KHYsf0EjHSE",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-06-18T00:46:54.035Z",
+      "started_at": "2026-06-18T00:45:50.273Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:46:54.035Z",
+      "elapsed_ms": 63762
+    },
+    "todo:10": {
+      "task_key": "todo:10",
+      "task_label": "10",
+      "task_title": "Update tests for edit.py + rename test file",
+      "session_id": "ses_127d0ee65ffeir1UsFQKB2m0wq",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-06-18T00:46:55.302Z",
+      "started_at": "2026-06-18T00:46:34.757Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:46:55.302Z",
+      "elapsed_ms": 20545
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "Update bot.py imports and run full test suite",
+      "session_id": "ses_127cdc070ffeVKtdjOs13JaSsz",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-18T00:48:04.206Z",
+      "started_at": "2026-06-18T00:47:51.916Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:48:04.206Z",
+      "elapsed_ms": 12290
+    },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_1287ecfa7ffePuc5JUQYoDW5MS",
+      "session_id": "ses_127ccb812ffeV80BUo5lKz6qTj",
       "agent": "oracle",
-      "started_at": "2026-06-17T21:35:57.224Z",
-      "status": "running",
-      "updated_at": "2026-06-17T21:35:57.828Z"
+      "started_at": "2026-06-18T00:51:37.033Z",
+      "status": "completed",
+      "updated_at": "2026-06-18T00:53:01.350Z",
+      "ended_at": "2026-06-18T00:53:01.350Z",
+      "elapsed_ms": 84317
+    },
+    "final-wave:f2": {
+      "task_key": "final-wave:f2",
+      "task_label": "F2",
+      "task_title": "**Code Quality Review** — Run build checks, test suite, and review all changed files for quality issues.",
+      "session_id": "ses_127cca1a9ffeik6qUrxmVNwQ9V",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-18T00:53:04.461Z",
+      "started_at": "2026-06-18T00:49:31.868Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:53:04.461Z",
+      "elapsed_ms": 212593
+    },
+    "final-wave:f3": {
+      "task_key": "final-wave:f3",
+      "task_label": "F3",
+      "task_title": "**Real Manual QA** — Execute QA scenarios from every task. Start from clean state. Verify cross-task integration. Run full test suite. Verify grep for Spanish identifiers returns ZERO matches.",
+      "session_id": "ses_127cc8707ffe9TUwuc2eHgdEGT",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-18T00:53:05.041Z",
+      "started_at": "2026-06-18T00:49:59.793Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:53:05.041Z",
+      "elapsed_ms": 185248
+    },
+    "final-wave:f4": {
+      "task_key": "final-wave:f4",
+      "task_label": "F4",
+      "task_title": "**Scope Fidelity Check** — For each task, read \"What to do\" from the plan, then read the actual diff. Verify 1:1 correspondence — everything in spec was built (no missing), nothing beyond spec was built (no scope creep).",
+      "session_id": "ses_127cc64d8ffejHkilt5nqtTWov",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-06-18T00:53:05.576Z",
+      "started_at": "2026-06-18T00:51:29.552Z",
+      "status": "completed",
+      "ended_at": "2026-06-18T00:53:05.576Z",
+      "elapsed_ms": 96024
     }
   },
-  "status": "active",
-  "agent": "atlas",
-  "worktree_path": null
+  "active_work_id": "es-to-en-refactor-legacy",
+  "works": {
+    "es-to-en-refactor-legacy": {
+      "work_id": "es-to-en-refactor-legacy",
+      "active_plan": "/home/jtristante/Projects/GaelCareBot/.sisyphus/plans/es-to-en-refactor.md",
+      "plan_name": "es-to-en-refactor",
+      "status": "completed",
+      "started_at": "2026-06-18T00:31:32.232Z",
+      "updated_at": "2026-06-18T00:54:15.435Z",
+      "session_ids": [
+        "ses_127dc1893ffeMx4FInM7u9NXk2",
+        "ses_127ccb812ffeV80BUo5lKz6qTj"
+      ],
+      "session_origins": {
+        "ses_127dc1893ffeMx4FInM7u9NXk2": "direct",
+        "ses_127ccb812ffeV80BUo5lKz6qTj": "appended"
+      },
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "Rename Spanish variables in db.py",
+          "session_id": "ses_127da9f03ffeodZY6IIpGW1V0T",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-06-18T00:36:21.906Z",
+          "started_at": "2026-06-18T00:35:33.365Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:36:21.905Z",
+          "elapsed_ms": 48540
+        },
+        "todo:3": {
+          "task_key": "todo:3",
+          "task_label": "3",
+          "task_title": "Update .format() callers for new messages.py placeholders",
+          "session_id": "ses_127d75d69ffevOaijjc40B3Yu0",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-06-18T00:38:12.972Z",
+          "started_at": "2026-06-18T00:37:55.218Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:38:12.972Z",
+          "elapsed_ms": 17754
+        },
+        "todo:4": {
+          "task_key": "todo:4",
+          "task_label": "4",
+          "task_title": "Rename Spanish identifiers in group_notifier.py",
+          "session_id": "ses_127d5bdabffeLgb1I87Bs1RJh9",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-06-18T00:39:12.875Z",
+          "started_at": "2026-06-18T00:39:01.331Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:39:12.875Z",
+          "elapsed_ms": 11544
+        },
+        "todo:5": {
+          "task_key": "todo:5",
+          "task_label": "5",
+          "task_title": "Rename agregar.py → add.py with English identifiers + remove legacy wrapper",
+          "session_id": "ses_127d4db75ffet0CrHxTXcJzMPD",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-06-18T00:42:52.817Z",
+          "started_at": "2026-06-18T00:41:44.374Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:42:52.817Z",
+          "elapsed_ms": 68443
+        },
+        "todo:9": {
+          "task_key": "todo:9",
+          "task_label": "9",
+          "task_title": "Update tests for consume.py + rename test file",
+          "session_id": "ses_127d1199cffed0nFQYq8e4TCAB",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-06-18T00:46:54.710Z",
+          "started_at": "2026-06-18T00:45:45.495Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:46:54.710Z",
+          "elapsed_ms": 69215
+        },
+        "todo:8": {
+          "task_key": "todo:8",
+          "task_label": "8",
+          "task_title": "Update tests for add.py + rename test file",
+          "session_id": "ses_127d13725ffeRI4KHYsf0EjHSE",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-06-18T00:46:54.035Z",
+          "started_at": "2026-06-18T00:45:50.273Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:46:54.035Z",
+          "elapsed_ms": 63762
+        },
+        "todo:10": {
+          "task_key": "todo:10",
+          "task_label": "10",
+          "task_title": "Update tests for edit.py + rename test file",
+          "session_id": "ses_127d0ee65ffeir1UsFQKB2m0wq",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-06-18T00:46:55.302Z",
+          "started_at": "2026-06-18T00:46:34.757Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:46:55.302Z",
+          "elapsed_ms": 20545
+        },
+        "todo:11": {
+          "task_key": "todo:11",
+          "task_label": "11",
+          "task_title": "Update bot.py imports and run full test suite",
+          "session_id": "ses_127cdc070ffeVKtdjOs13JaSsz",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-06-18T00:48:04.206Z",
+          "started_at": "2026-06-18T00:47:51.916Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:48:04.206Z",
+          "elapsed_ms": 12290
+        },
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "**Plan Compliance Audit** — `oracle`",
+          "session_id": "ses_127ccb812ffeV80BUo5lKz6qTj",
+          "agent": "oracle",
+          "started_at": "2026-06-18T00:51:37.033Z",
+          "status": "completed",
+          "updated_at": "2026-06-18T00:53:01.350Z",
+          "ended_at": "2026-06-18T00:53:01.350Z",
+          "elapsed_ms": 84317
+        },
+        "final-wave:f2": {
+          "task_key": "final-wave:f2",
+          "task_label": "F2",
+          "task_title": "**Code Quality Review** — Run build checks, test suite, and review all changed files for quality issues.",
+          "session_id": "ses_127cca1a9ffeik6qUrxmVNwQ9V",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-18T00:53:04.461Z",
+          "started_at": "2026-06-18T00:49:31.868Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:53:04.461Z",
+          "elapsed_ms": 212593
+        },
+        "final-wave:f3": {
+          "task_key": "final-wave:f3",
+          "task_label": "F3",
+          "task_title": "**Real Manual QA** — Execute QA scenarios from every task. Start from clean state. Verify cross-task integration. Run full test suite. Verify grep for Spanish identifiers returns ZERO matches.",
+          "session_id": "ses_127cc8707ffe9TUwuc2eHgdEGT",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-18T00:53:05.041Z",
+          "started_at": "2026-06-18T00:49:59.793Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:53:05.041Z",
+          "elapsed_ms": 185248
+        },
+        "final-wave:f4": {
+          "task_key": "final-wave:f4",
+          "task_label": "F4",
+          "task_title": "**Scope Fidelity Check** — For each task, read \"What to do\" from the plan, then read the actual diff. Verify 1:1 correspondence — everything in spec was built (no missing), nothing beyond spec was built (no scope creep).",
+          "session_id": "ses_127cc64d8ffejHkilt5nqtTWov",
+          "agent": "Sisyphus-Junior",
+          "category": "deep",
+          "updated_at": "2026-06-18T00:53:05.576Z",
+          "started_at": "2026-06-18T00:51:29.552Z",
+          "status": "completed",
+          "ended_at": "2026-06-18T00:53:05.576Z",
+          "elapsed_ms": 96024
+        }
+      },
+      "ended_at": "2026-06-18T00:54:15.435Z",
+      "elapsed_ms": 1363203
+    }
+  },
+  "ended_at": "2026-06-18T00:54:15.435Z",
+  "elapsed_ms": 1363203
 }

@@ -1,4 +1,4 @@
-"""Tests for the /consumir command handler."""
+"""Tests for the /consume command handler."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from telegram.ext import ConversationHandler
 
 from gaelcarebot import auth
 from gaelcarebot.config import load_config
-from gaelcarebot.handlers.consumir import (
-    consumir_command,
+from gaelcarebot.handlers.consume import (
+    consume_command,
     entry_selected,
     confirm_reversal,
     cancel,
@@ -35,8 +35,8 @@ def init_auth_for_tests(monkeypatch):
     auth.init_auth(config)
 
 
-class TestConsumirCommandReversalMode:
-    """Tests for the /consumir command (always enters reversal mode)."""
+class TestConsumeCommandReversalMode:
+    """Tests for the /consume command (always enters reversal mode)."""
 
     @pytest.fixture
     def mock_db(self):
@@ -77,31 +77,31 @@ class TestConsumirCommandReversalMode:
         return _create
 
     @pytest.mark.asyncio
-    async def test_consumir_no_args_enters_reversal_mode(self, setup_update, setup_context, mock_db):
+    async def test_consume_no_args_enters_reversal_mode(self, setup_update, setup_context, mock_db):
         update = setup_update(123)
         ctx = setup_context()
         mock_db.get_all_entries.return_value = [
             {"id": 1, "entry_type": "ENTRADA", "amount": 100, "event_date": "2026-05-19T10:00:00"}
         ]
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         mock_db.get_all_entries.assert_called_once()
         assert result == SELECTING_ENTRY
 
     @pytest.mark.asyncio
-    async def test_consumir_no_entries(self, setup_update, setup_context, mock_db):
+    async def test_consume_no_entries(self, setup_update, setup_context, mock_db):
         update = setup_update(123)
         ctx = setup_context()
         mock_db.get_all_entries.return_value = []
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == ConversationHandler.END
 
     @pytest.mark.asyncio
-    async def test_consumir_shows_only_entrada(self, setup_update, setup_context, mock_db):
+    async def test_consume_shows_only_entrada(self, setup_update, setup_context, mock_db):
         update = setup_update(123)
         ctx = setup_context()
         mock_db.get_all_entries.return_value = [
@@ -109,7 +109,7 @@ class TestConsumirCommandReversalMode:
             {"id": 2, "entry_type": "SALIDA", "amount": 50, "event_date": "2026-05-19T11:00:00", "notes": None},
         ]
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         assert result == SELECTING_ENTRY
         call_args = update.message.reply_text.call_args
@@ -118,17 +118,17 @@ class TestConsumirCommandReversalMode:
         assert "ENTRADA" in keyboard[0][0].text
 
     @pytest.mark.asyncio
-    async def test_consumir_unauthorized(self, setup_update, setup_context, mock_db):
+    async def test_consume_unauthorized(self, setup_update, setup_context, mock_db):
         update = setup_update(999)
         ctx = setup_context()
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         update.message.reply_text.assert_called_once_with(ERROR_UNAUTHORIZED)
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_consumir_no_db_in_context(self, setup_update):
+    async def test_consume_no_db_in_context(self, setup_update):
         update = setup_update(123)
         ctx = Mock()
         ctx.bot = Mock()
@@ -138,13 +138,13 @@ class TestConsumirCommandReversalMode:
         ctx.args = []
         ctx.match = None
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
         assert result == ConversationHandler.END
 
     @pytest.mark.asyncio
-    async def test_consumir_fifo_salida_has_consumed_at(self, db):
+    async def test_consume_fifo_salida_has_consumed_at(self, db):
         """Test that consume_fifo() creates a SALIDA entry with consumed_at set."""
         db.add_entry(
             "ENTRADA", 100, "2026-05-19T10:00:00", 123, "test_user", None,
@@ -228,7 +228,7 @@ class TestReversalFlowInteractions:
         ctx = setup_context([])  # No args
         mock_db.get_all_entries.return_value = []
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         # Verify error message
         update.message.reply_text.assert_called_once_with(ERROR_NO_ENTRIES)
@@ -247,7 +247,7 @@ class TestReversalFlowInteractions:
             {"id": 3, "entry_type": "ENTRADA", "amount": 200, "event_date": "2026-05-19T12:00:00", "notes": None},
         ]
 
-        result = await consumir_command(update, ctx)
+        result = await consume_command(update, ctx)
 
         # Verify returned SELECTING_ENTRY state
         assert result == SELECTING_ENTRY
@@ -343,7 +343,7 @@ class TestReversalFlowInteractions:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+            MSG_CONSUMED.format(amount=100, date="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -442,7 +442,7 @@ class TestReversalFlowInteractions:
             "username": "test_user"
         }
 
-        with patch("gaelcarebot.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+        with patch("gaelcarebot.handlers.consume.send_daily_summary", new_callable=AsyncMock) as mock_notify:
             result = await confirm_reversal(update, ctx)
 
             # Verify notification was sent
@@ -450,7 +450,7 @@ class TestReversalFlowInteractions:
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
-            MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
+            MSG_CONSUMED.format(amount=100, date="19/05/2026")
         )
 
         # Verify returned ConversationHandler.END
@@ -473,7 +473,7 @@ class TestReversalFlowInteractions:
             "username": "test_user"
         }
 
-        with patch("gaelcarebot.handlers.consumir.send_daily_summary", new_callable=AsyncMock) as mock_notify:
+        with patch("gaelcarebot.handlers.consume.send_daily_summary", new_callable=AsyncMock) as mock_notify:
             mock_notify.side_effect = Exception("API error")
 
             result = await confirm_reversal(update, ctx)
@@ -483,9 +483,9 @@ class TestReversalFlowInteractions:
             mock_db.conn.commit.assert_called_once()
 
             # Verify success message still shown despite notification failure
-            update.callback_query.edit_message_text.assert_called_once_with(
-                MSG_CONSUMED.format(cantidad=100, fecha="19/05/2026")
-            )
+        update.callback_query.edit_message_text.assert_called_once_with(
+            MSG_CONSUMED.format(amount=100, date="19/05/2026")
+        )
 
         # Verify returned ConversationHandler.END
         assert result == ConversationHandler.END
@@ -538,7 +538,7 @@ class TestReversalFlowInteractions:
         The fix must move get_entry() BEFORE the mutation.
         """
         # Disable send_daily_summary to avoid import issues
-        monkeypatch.setattr("gaelcarebot.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
+        monkeypatch.setattr("gaelcarebot.handlers.consume._SEND_DAILY_SUMMARY_AVAILABLE", False)
 
         # Add an ENTRADA entry to the real in-memory database
         entry_id = db.add_entry(
@@ -570,7 +570,7 @@ class TestReversalFlowInteractions:
         call_args = update.callback_query.edit_message_text.call_args
         msg_text = call_args[0][0]
 
-        expected = MSG_CONSUMED.format(cantidad=150, fecha="19/05/2026")
+        expected = MSG_CONSUMED.format(amount=150, date="19/05/2026")
         assert msg_text == expected, f"Expected '{expected}', got: {msg_text}"
 
         assert result == ConversationHandler.END
@@ -583,7 +583,7 @@ class TestReversalFlowInteractions:
         It queries the database directly via SQL.
         """
         # Disable send_daily_summary to avoid import issues
-        monkeypatch.setattr("gaelcarebot.handlers.consumir._SEND_DAILY_SUMMARY_AVAILABLE", False)
+        monkeypatch.setattr("gaelcarebot.handlers.consume._SEND_DAILY_SUMMARY_AVAILABLE", False)
 
         # Add an ENTRADA entry to the real in-memory database
         entry_id = db.add_entry(

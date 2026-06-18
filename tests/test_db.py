@@ -72,8 +72,8 @@ class TestMilkDatabase:
         db.add_entry("SALIDA", 100, "2026-05-19T12:00:00", 123, "user_a")
 
         summary = db.get_daily_summary("2026-05-19")
-        assert summary["total_entradas"] == 350
-        assert summary["total_salidas"] == 100
+        assert summary["total_additions"] == 350
+        assert summary["total_consumptions"] == 100
         assert summary["balance"] == 250
 
     def test_get_daily_summary_empty_day(self, db: MilkDatabase) -> None:
@@ -81,24 +81,24 @@ class TestMilkDatabase:
         db.add_entry("ENTRADA", 100, "2026-05-20T10:00:00", 123, "user_a")
 
         summary = db.get_daily_summary("2026-05-19")
-        assert summary["total_entradas"] == 0
-        assert summary["total_salidas"] == 0
+        assert summary["total_additions"] == 0
+        assert summary["total_consumptions"] == 0
         assert summary["balance"] == 0
 
     def test_get_daily_summary_only_entrada(self, db: MilkDatabase) -> None:
         """Summary with only ENTRADA entries."""
         db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "user_a")
         summary = db.get_daily_summary("2026-05-19")
-        assert summary["total_entradas"] == 200
-        assert summary["total_salidas"] == 0
+        assert summary["total_additions"] == 200
+        assert summary["total_consumptions"] == 0
         assert summary["balance"] == 200
 
     def test_get_daily_summary_only_salida(self, db: MilkDatabase) -> None:
         """Summary with only SALIDA entries."""
         db.add_entry("SALIDA", 80, "2026-05-19T10:00:00", 123, "user_a")
         summary = db.get_daily_summary("2026-05-19")
-        assert summary["total_entradas"] == 0
-        assert summary["total_salidas"] == 80
+        assert summary["total_additions"] == 0
+        assert summary["total_consumptions"] == 80
         assert summary["balance"] == -80
 
     def test_update_entry(self, db: MilkDatabase) -> None:
@@ -313,7 +313,7 @@ class TestSoftDelete:
         db.add_entry("ENTRADA", 100, "2026-05-19T11:00:00", 123, "test_user")
         db.delete_entry(entry_id)
         summary = db.get_daily_summary("2026-05-19")
-        assert summary["total_entradas"] == 300
+        assert summary["total_additions"] == 300
         assert summary["balance"] == 300
 
     def test_update_entry_on_soft_deleted_returns_false(self, db: MilkDatabase) -> None:
@@ -582,7 +582,7 @@ class TestDualDateSummary:
         db.conn.commit()
 
         summary = db.get_daily_summary("2026-05-22")
-        assert summary["total_salidas"] == 150
+        assert summary["total_consumptions"] == 150
 
     def test_get_entries_by_date_includes_consumed(
         self, db: MilkDatabase

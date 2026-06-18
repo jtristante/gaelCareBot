@@ -27,7 +27,7 @@ async def test_total_positive(db, mock_update, mock_context, auth_init):
 
     await total_command(mock_update, mock_context)
 
-    expected = MSG_STOCK_TOTAL.format(cantidad=300)
+    expected = MSG_STOCK_TOTAL.format(amount=300)
     mock_update.message.reply_text.assert_awaited_once_with(expected)
 
 
@@ -51,5 +51,5 @@ async def test_total_after_full_consumption(db, mock_update, mock_context, auth_
 
     await total_command(mock_update, mock_context)
 
-    expected = MSG_STOCK_TOTAL.format(cantidad=100)
+    expected = MSG_STOCK_TOTAL.format(amount=100)
     mock_update.message.reply_text.assert_awaited_once_with(expected)

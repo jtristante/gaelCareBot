@@ -14,9 +14,9 @@ from gaelcarebot.auth import init_auth
 from gaelcarebot.config import load_config
 from gaelcarebot.db import MilkDatabase
 from gaelcarebot.group_notifier import init_notifier
-from gaelcarebot.handlers.agregar import agregar_conv_handler
-from gaelcarebot.handlers.consumir import consumir_conv_handler
-from gaelcarebot.handlers.editar import editar_conv_handler
+from gaelcarebot.handlers.add import add_conv_handler
+from gaelcarebot.handlers.consume import consume_conv_handler
+from gaelcarebot.handlers.edit import edit_conv_handler
 from gaelcarebot.handlers.error import error_handler
 from gaelcarebot.handlers.start import start_command
 from gaelcarebot.handlers.stock import stock_command
@@ -52,11 +52,11 @@ def main() -> None:
 
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(agregar_conv_handler)
-    application.add_handler(consumir_conv_handler)
+    application.add_handler(add_conv_handler)
+    application.add_handler(consume_conv_handler)
     application.add_handler(CommandHandler("stock", stock_command))
     application.add_handler(CommandHandler("total", total_command))
-    application.add_handler(editar_conv_handler)
+    application.add_handler(edit_conv_handler)
 
     application.add_error_handler(error_handler)
 

@@ -1,4 +1,4 @@
-"""Handler for the /consumir command - reversal mode (ENTRADA → SALIDA)."""
+"""Handler for the /consume command - reversal mode (ENTRADA → SALIDA)."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ except ImportError:
 
 
 @authorized_only
-async def consumir_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def consume_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return await _start_reversal_mode(update, context)
 
 
@@ -49,15 +49,15 @@ async def _start_reversal_mode(update: Update, context: ContextTypes.DEFAULT_TYP
 
     # Get all entries, then filter for ENTRADA only (not consumed)
     all_entries = db.get_all_entries(order_by="event_date DESC", include_consumed=False)
-    entrada_entries = [e for e in all_entries if e["entry_type"] == "ENTRADA"]
+    entries = [e for e in all_entries if e["entry_type"] == "ENTRADA"]
 
-    if not entrada_entries:
+    if not entries:
         await update.message.reply_text(ERROR_NO_ENTRIES)
         return ConversationHandler.END
 
     # Build inline keyboard with ENTRADA entries only
     keyboard = []
-    for entry in entrada_entries:
+    for entry in entries:
         # Format: ID - Fecha - Cantidad
         fecha = entry["event_date"][:10] if entry["event_date"] else "N/A"
         label = f"#{entry['id']} [ENTRADA] {fecha} - {entry['amount']}ml"
@@ -164,7 +164,7 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
         _clear_reversal_data(context)
         return ConversationHandler.END
-    cantidad = entry["amount"]
+    amount = entry["amount"]
     event_date_raw = entry.get("event_date", "")
 
     try:
@@ -193,7 +193,7 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     logger.warning("Failed to send daily summary: %s", e)
 
             await query.edit_message_text(
-                MSG_CONSUMED.format(cantidad=cantidad, fecha=formatted_date)
+                MSG_CONSUMED.format(amount=amount, date=formatted_date)
             )
         else:
             await query.edit_message_text(ERROR_ENTRY_NOT_FOUND)
@@ -227,8 +227,8 @@ def _clear_reversal_data(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # Create the ConversationHandler
-consumir_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("consumir", consumir_command)],
+consume_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("consumir", consume_command)],
     states={
         SELECTING_ENTRY: [CallbackQueryHandler(entry_selected, pattern="^(reverse_|cancel)")],
         CONFIRMING: [CallbackQueryHandler(confirm_reversal, pattern="^(confirm|cancel)")],

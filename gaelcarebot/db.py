@@ -351,21 +351,21 @@ class MilkDatabase:
         cur = self.conn.execute(
             "SELECT id, amount FROM milk_entries WHERE entry_type = 'ENTRADA' AND consumed_at IS NULL ORDER BY event_date ASC, id ASC"
         )
-        entradas = cur.fetchall()
+        entries = cur.fetchall()
 
-        available = sum(row[1] for row in entradas)
+        available = sum(row[1] for row in entries)
         if available < amount:
             raise ValueError(f"Insufficient stock: need {amount}, available {available}")
 
         cumulative = 0
-        for row in entradas:
+        for row in entries:
             entry_id = row[0]
-            entry_cantidad = row[1]
+            entry_amount = row[1]
             self.conn.execute(
                 "UPDATE milk_entries SET consumed_at = ? WHERE id = ?",
                 (now_madrid(), entry_id)
             )
-            cumulative += entry_cantidad
+            cumulative += entry_amount
             if cumulative >= amount:
                 break
 
@@ -414,7 +414,7 @@ class MilkDatabase:
         ENTRADA entries are filtered by add_at (extraction date).
         SALIDA entries are filtered by consumed_at (consumption date).
 
-        Returns *{"total_entradas": int, "total_salidas": int, "balance": int}*.
+        Returns *{"total_additions": int, "total_consumptions": int, "balance": int}*.
         """
         start = f"{date}T00:00:00"
         dt = datetime.strptime(date, "%Y-%m-%d")
@@ -423,8 +423,8 @@ class MilkDatabase:
 
         cur = self.conn.execute(
             """SELECT
-                   COALESCE(SUM(CASE WHEN entry_type = 'ENTRADA' THEN amount ELSE 0 END), 0) AS total_entradas,
-                   COALESCE(SUM(CASE WHEN entry_type = 'SALIDA'   THEN amount ELSE 0 END), 0) AS total_salidas
+                   COALESCE(SUM(CASE WHEN entry_type = 'ENTRADA' THEN amount ELSE 0 END), 0) AS total_additions,
+                   COALESCE(SUM(CASE WHEN entry_type = 'SALIDA'   THEN amount ELSE 0 END), 0) AS total_consumptions
                FROM milk_entries
                WHERE (entry_type = 'ENTRADA' AND event_date >= ? AND event_date < ?)
                   OR (entry_type = 'SALIDA' AND consumed_at >= ? AND consumed_at < ?)
@@ -432,8 +432,8 @@ class MilkDatabase:
             (start, end, start, end, start, end),
         )
         row = cur.fetchone()
-        total_entradas = row["total_entradas"]
-        total_salidas = row["total_salidas"]
+        total_additions = row["total_additions"]
+        total_consumptions = row["total_consumptions"]
 
         # Reversal SALIDAs (ENTRADA→SALIDA on same day) represent both
         # an extraction and a consumption. Add their amount as phantom ENTRADA.
@@ -446,12 +446,12 @@ class MilkDatabase:
             (start, end, start, end),
         )
         phantom = cur.fetchone()[0]
-        total_entradas += phantom
+        total_additions += phantom
 
         return {
-            "total_entradas": total_entradas,
-            "total_salidas": total_salidas,
-            "balance": total_entradas - total_salidas,
+            "total_additions": total_additions,
+            "total_consumptions": total_consumptions,
+            "balance": total_additions - total_consumptions,
         }
 
     def close(self) -> None:
