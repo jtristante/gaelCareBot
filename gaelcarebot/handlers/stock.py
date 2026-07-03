@@ -10,7 +10,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from gaelcarebot.auth import authorized_only
-from gaelcarebot.messages import ERROR_NO_ENTRIES, TABLE_HEADER
+from gaelcarebot.messages import ERROR_NO_ENTRIES, STOCK_TABLE_TOTAL, TABLE_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if len(full_message) > 4096:
         trunc_suffix = "\n... y {remaining} m\u00e1s..."
         prefix = f"{title}\n\n<pre>{header_row}\n{separator}\n"
-        available = 4096 - len(prefix) - 60
+        available = 4096 - len(prefix) - 95  # 60 for suffix + 35 for total line
 
         fitting = []
         current = 0
@@ -75,6 +75,12 @@ async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"{prefix}{table_content}"
             f"{trunc_suffix.format(remaining=remaining)}</pre>"
         )
+
+    try:
+        total = db.get_total_stock()
+        full_message += STOCK_TABLE_TOTAL.format(total=total)
+    except Exception:
+        logger.exception("Failed to get total stock for /stock display")
 
     logger.info("Stock list requested — %d entries returned", len(entries))
     await update.message.reply_html(full_message)

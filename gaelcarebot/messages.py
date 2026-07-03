@@ -126,6 +126,9 @@ TABLE_HEADER = (
     "<pre>ID  Fecha        Tipo     Cantidad  Responsable  Notas</pre>"
 )
 
+# Total row appended to the stock history table. Use .format(total=...).
+STOCK_TABLE_TOTAL = "\n<b>Total: {total} ml</b>"
+
 # ── Inline button labels ────────────────────────────────────────────────────
 
 # Cancel button for interactive flows.
