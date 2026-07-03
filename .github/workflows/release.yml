@@ -28,6 +28,7 @@ jobs:
         run: |
           echo "::group::Configure PAT"
           git remote set-url origin https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git
+          git config --local --unset-all http.https://github.com/.extraheader
           echo "::endgroup::"
 
       - name: Stash changes
