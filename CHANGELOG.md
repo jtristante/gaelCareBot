@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.0.0] - 2026-07-03
+
+### Añadido
+
+- **Stock**: fila de totales en la tabla de stock (`/stock`) que muestra la suma de todas las extracciones
+- **Notificaciones**: persistencia de mensajes de resumen diario en base de datos (`daily_summary_messages` table)
+- **Notificaciones**: edición de mensajes de resumen existentes en lugar de enviar duplicados (con fallback a nuevo mensaje si falla)
+- **Notificaciones**: formato cronológico (orden ASC) con timestamps HH:MM en los resúmenes diarios
+- **Tests**: cobertura de tests para la fila de totales en stock y la nueva estrategia de notificaciones
+
+### Cambiado
+
+- **Notificaciones**: estrategia de envío cambiada a "eliminar y reenviar" para garantizar notificaciones push en el grupo
+- **Notificaciones**: firma de `send_daily_summary()` cambiada de `(bot, db)` a `(context, db)` para acceso completo al contexto
+- **Handlers**: actualizados los puntos de llamada a `send_daily_summary` en `/agregar` y `/consumir` para pasar `context` en lugar de `context.bot`
+
+### Corregido
+
+- **Workflow**: manejo de entradas stash vacías en el flujo de release
+- **Notificaciones**: formato de resumen revertido al clásico (sin timestamps) para mejor legibilidad
+
+### Eliminado
+
+- **Comandos**: eliminado el comando `/help` redundante (la funcionalidad se mantiene en `/start`)
+
+[2.0.0]: https://github.com/jtristante/gaelcarebot/releases/tag/v2.0.0
+
 ## [1.0.0] - 2026-07-03
 
 ### Añadido
