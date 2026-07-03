@@ -1,7 +1,7 @@
 """Standalone CLI for SNAPSHOT/release version bumping.
 
 Usage:
-    python scripts/bump_version.py release <X.Y.Z-SNAPSHOT>
+    python scripts/bump_version.py release <X.Y.Z.dev0>
     python scripts/bump_version.py next <X.Y.Z>
 
 Functions are importable for testing — zero external dependencies.
@@ -12,12 +12,12 @@ from __future__ import annotations
 import re
 import sys
 
-_RE_SNAPSHOT = re.compile(r"^(\d+)\.(\d+)\.(\d+)-SNAPSHOT$")
+_RE_SNAPSHOT = re.compile(r"^(\d+)\.(\d+)\.(\d+)\.dev0$")
 _RE_RELEASE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 
 def parse_snapshot(version_str: str) -> tuple[int, int, int]:
-    """Parse a ``X.Y.Z-SNAPSHOT`` string into ``(major, minor, patch)``.
+    """Parse a ``X.Y.Z.dev0`` string into ``(major, minor, patch)``.
 
     Args:
         version_str: Version string to parse.
@@ -26,13 +26,13 @@ def parse_snapshot(version_str: str) -> tuple[int, int, int]:
         Tuple of (major, minor, patch) integers.
 
     Raises:
-        ValueError: If the string does not match ``X.Y.Z-SNAPSHOT``.
+        ValueError: If the string does not match ``X.Y.Z.dev0``.
     """
     m = _RE_SNAPSHOT.match(version_str)
     if not m:
         raise ValueError(
-            f"'{version_str}' is not a valid SNAPSHOT version "
-            "(expected X.Y.Z-SNAPSHOT)"
+            f"'{version_str}' is not a valid dev version "
+            "(expected X.Y.Z.dev0)"
         )
     return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
@@ -50,7 +50,7 @@ def compute_release(
 def compute_next_snapshot(
     rel_major: int, rel_minor: int, rel_patch: int
 ) -> tuple[int, int, int]:
-    """Compute the next SNAPSHOT version after a release.
+    """Compute the next dev version after a release.
 
     Bumps *minor* by 1 and resets patch to 0.
     """
@@ -63,8 +63,8 @@ def format_version(major: int, minor: int, patch: int) -> str:
 
 
 def format_snapshot(major: int, minor: int, patch: int) -> str:
-    """Format ``(major, minor, patch)`` as ``"X.Y.Z-SNAPSHOT"``."""
-    return f"{major}.{minor}.{patch}-SNAPSHOT"
+    """Format ``(major, minor, patch)`` as ``"X.Y.Z.dev0"``."""
+    return f"{major}.{minor}.{patch}.dev0"
 
 
 def _main(argv: list[str] | None = None) -> None:
@@ -90,7 +90,7 @@ def _main(argv: list[str] | None = None) -> None:
         if not m:
             _die(
                 f"'{version}' is not a valid release version "
-                "(expected X.Y.Z, no -SNAPSHOT suffix)"
+                "(expected X.Y.Z, no .dev0 suffix)"
             )
         parts = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
         nxt = compute_next_snapshot(*parts)

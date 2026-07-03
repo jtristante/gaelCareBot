@@ -7,31 +7,31 @@ Documentacion del sistema de versionado, release, deploy y rollback del proyecto
 El proyecto usa un formato de version inspirado en Maven SNAPSHOT:
 
 ```
-X.Y.Z-SNAPSHOT
+X.Y.Z.dev0
 ```
 
 - **X (MAJOR)**: incrementa en cada release.
 - **Y (MINOR)**: incrementa al preparar el siguiente ciclo de desarrollo tras un release.
 - **Z (PATCH)**: reservado para hotfixes (no se usa actualmente).
-- **`-SNAPSHOT`**: indica que es una version de desarrollo. Una imagen SNAPSHOT se publica como `:latest` y se sobrescribe en cada push a `master`.
+- **`.dev0`**: indica que es una version de desarrollo. Una imagen SNAPSHOT se publica como `:latest` y se sobrescribe en cada push a `master`.
 
 ### Reglas de bump
 
 | Evento | Bump | Ejemplo (desde) | Ejemplo (resultado) |
 |---|---|---|---|
-| Release | MAJOR +1, quitar `-SNAPSHOT` | `0.1.0-SNAPSHOT` | `1.0.0` |
-| Post-release | MINOR +1, anadir `-SNAPSHOT` | `1.0.0` | `1.1.0-SNAPSHOT` |
-| Push a master | Ninguno (sigue siendo SNAPSHOT) | `0.1.0-SNAPSHOT` | `0.1.0-SNAPSHOT` |
+| Release | MAJOR +1, quitar `.dev0` | `0.1.0.dev0` | `1.0.0` |
+| Post-release | MINOR +1, anadir `.dev0` | `1.0.0` | `1.1.0.dev0` |
+| Push a master | Ninguno (sigue siendo SNAPSHOT) | `0.1.0.dev0` | `0.1.0.dev0` |
 
 ### Tabla de transformaciones
 
 | Version actual | Accion | Version resultante | Tag Docker |
 |---|---|---|---|
-| `0.1.0-SNAPSHOT` | Release | `1.0.0` | `ghcr.io/jtristante/gaelcarebot:1.0.0` |
-| `1.0.0` | Post-release | `1.1.0-SNAPSHOT` | `:latest` |
-| `1.1.0-SNAPSHOT` | Release | `2.0.0` | `ghcr.io/jtristante/gaelcarebot:2.0.0` |
+| `0.1.0.dev0` | Release | `1.0.0` | `ghcr.io/jtristante/gaelcarebot:1.0.0` |
+| `1.0.0` | Post-release | `1.1.0.dev0` | `:latest` |
+| `1.1.0.dev0` | Release | `2.0.0` | `ghcr.io/jtristante/gaelcarebot:2.0.0` |
 | `2.0.0` | Hotfix (hipotetico) | `2.0.1` | `ghcr.io/jtristante/gaelcarebot:2.0.1` |
-| `2.0.1` | Post-hotfix | `2.1.0-SNAPSHOT` | `:latest` |
+| `2.0.1` | Post-hotfix | `2.1.0.dev0` | `:latest` |
 
 La version se lee del archivo `VERSION` en la raiz del repositorio. Ese archivo es la fuente de verdad.
 
@@ -53,14 +53,14 @@ El workflow Release ejecuta estos pasos de forma automatica:
 ```
  1. Stash          — guarda cambios locales sin commitear (si los hay)
  2. Leer version   — extrae el contenido de VERSION
- 3. Validar        — comprueba que termina en -SNAPSHOT
- 4. Calcular       — quita -SNAPSHOT, incrementa MAJOR
+ 3. Validar        — comprueba que termina en .dev0
+ 4. Calcular       — quita .dev0, incrementa MAJOR
  5. Escribir       — guarda la nueva version release en VERSION
  6. Commit         — "Release X.0.0"
  7. Tag            — git tag vX.0.0
- 8. Calcular next  — incrementa MINOR, anade -SNAPSHOT
+ 8. Calcular next  — incrementa MINOR, anade .dev0
  9. Escribir       — guarda la nueva version SNAPSHOT en VERSION
-10. Commit         — "Bump to X.Y.0-SNAPSHOT"
+10. Commit         — "Bump to X.Y.0.dev0"
 11. Push           — git push --follow-tags
 12. Restore stash  — recupera cambios sin commitear (si los hay)
 ```
@@ -75,7 +75,7 @@ El workflow Release ejecuta estos pasos de forma automatica:
             +-----v------+
             |  Commit     |  "Release 1.0.0"
             |  Tag        |  v1.0.0
-            |  Bump dev   |  "Bump to 1.1.0-SNAPSHOT"
+            |  Bump dev   |  "Bump to 1.1.0.dev0"
             +-----+------+
                   |
             git push --follow-tags
@@ -194,7 +194,7 @@ cd /opt/gaelcarebot && docker compose -f docker-compose.yml -f docker-compose.pr
 Partimos de:
 
 ```
-VERSION = 0.1.0-SNAPSHOT
+VERSION = 0.1.0.dev0
 ```
 
 **Paso 1: Ejecutar el workflow Release en GitHub Actions**
@@ -204,12 +204,12 @@ Desde la interfaz de GitHub Actions, seleccionar workflow "Release" y hacer clic
 **Paso 2: El workflow ejecuta automaticamente**
 
 ```
-Leer VERSION        → "0.1.0-SNAPSHOT"
+Leer VERSION        → "0.1.0.dev0"
 Calcular release    → "1.0.0"
 Commit              → "Release 1.0.0"
 Tag                 → v1.0.0
-Calcular next       → "1.1.0-SNAPSHOT"
-Commit              → "Bump to 1.1.0-SNAPSHOT"
+Calcular next       → "1.1.0.dev0"
+Commit              → "Bump to 1.1.0.dev0"
 Push                → git push --follow-tags
 ```
 
@@ -217,7 +217,7 @@ Resultado en el repositorio:
 
 ```
 $ cat VERSION
-1.1.0-SNAPSHOT
+1.1.0.dev0
 
 $ git tag --list 'v*'
 v1.0.0

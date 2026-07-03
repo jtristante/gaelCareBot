@@ -22,20 +22,20 @@ class TestParseSnapshot:
     """parse_snapshot accepts valid SNAPSHOT strings."""
 
     def test_parses_0_1_0(self):
-        assert parse_snapshot("0.1.0-SNAPSHOT") == (0, 1, 0)
+        assert parse_snapshot("0.1.0.dev0") == (0, 1, 0)
 
     def test_parses_1_0_0(self):
-        assert parse_snapshot("1.0.0-SNAPSHOT") == (1, 0, 0)
+        assert parse_snapshot("1.0.0.dev0") == (1, 0, 0)
 
     def test_parses_4_2_0(self):
-        assert parse_snapshot("4.2.0-SNAPSHOT") == (4, 2, 0)
+        assert parse_snapshot("4.2.0.dev0") == (4, 2, 0)
 
 
 class TestParseSnapshotInvalid:
     """parse_snapshot rejects malformed input."""
 
     def test_rejects_plain_release(self):
-        with pytest.raises(ValueError, match="not a valid SNAPSHOT version"):
+        with pytest.raises(ValueError, match="not a valid dev version"):
             parse_snapshot("1.0.0")
 
     def test_rejects_garbage(self):
@@ -93,8 +93,8 @@ class TestFormatHelpers:
         assert format_version(4, 2, 0) == "4.2.0"
 
     def test_format_snapshot(self):
-        assert format_snapshot(1, 0, 0) == "1.0.0-SNAPSHOT"
-        assert format_snapshot(0, 1, 0) == "0.1.0-SNAPSHOT"
+        assert format_snapshot(1, 0, 0) == "1.0.0.dev0"
+        assert format_snapshot(0, 1, 0) == "0.1.0.dev0"
 
 
 # ---------------------------------------------------------------------------
@@ -106,7 +106,7 @@ class TestFullCycle:
     """End-to-end: SNAPSHOT → release → next SNAPSHOT."""
 
     def test_0_1_0_snapshot_to_release_to_next(self):
-        original = "0.1.0-SNAPSHOT"
+        original = "0.1.0.dev0"
 
         mjr, mnr, ptc = parse_snapshot(original)
         rel_mjr, rel_mnr, rel_ptc = compute_release(mjr, mnr, ptc)
@@ -119,10 +119,10 @@ class TestFullCycle:
         )
         next_snapshot_str = format_snapshot(nxt_mjr, nxt_mnr, nxt_ptc)
 
-        assert next_snapshot_str == "1.1.0-SNAPSHOT"
+        assert next_snapshot_str == "1.1.0.dev0"
 
     def test_4_2_0_snapshot_to_release_to_next(self):
-        original = "4.2.0-SNAPSHOT"
+        original = "4.2.0.dev0"
 
         mjr, mnr, ptc = parse_snapshot(original)
         rel_mjr, rel_mnr, rel_ptc = compute_release(mjr, mnr, ptc)
@@ -135,4 +135,4 @@ class TestFullCycle:
         )
         next_snapshot_str = format_snapshot(nxt_mjr, nxt_mnr, nxt_ptc)
 
-        assert next_snapshot_str == "5.1.0-SNAPSHOT"
+        assert next_snapshot_str == "5.1.0.dev0"
