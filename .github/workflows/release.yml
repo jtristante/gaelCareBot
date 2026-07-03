@@ -24,6 +24,12 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Configure git push via PAT
+        run: |
+          echo "::group::Configure PAT"
+          git remote set-url origin https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git
+          echo "::endgroup::"
+
       - name: Stash changes
         run: |
           echo "::group::Stash changes"
