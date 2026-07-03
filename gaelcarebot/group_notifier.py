@@ -16,7 +16,6 @@ from gaelcarebot.messages import (
     SUMMARY_ADDITIONS,
     SUMMARY_BALANCE,
     SUMMARY_CONSUMPTIONS,
-    SUMMARY_ENTRY_LINE,
     SUMMARY_HEADER,
     SUMMARY_NO_ACTIVITY,
 )
@@ -64,15 +63,14 @@ def get_daily_summary_text(db, date: str) -> str:
     for entry in sorted_entries:
         amount = entry["amount"]
         user = entry.get("username") or "Desconocido"
-        entry_time = entry["event_date"][11:16]  # Extract HH:MM from ISO format
-        sign = "+" if entry["entry_type"] == "ENTRADA" else "-"
-        entry_type = "extracción" if entry["entry_type"] == "ENTRADA" else "consumo"
-        lines.append(
-            SUMMARY_ENTRY_LINE.format(
-                time=entry_time, sign=sign, amount=amount,
-                entry_type=entry_type, user=user
+        if entry["entry_type"] == "ENTRADA":
+            lines.append(
+                SUMMARY_ADDITIONS.format(amount=amount, user=user)
             )
-        )
+        else:
+            lines.append(
+                SUMMARY_CONSUMPTIONS.format(amount=amount, user=user)
+            )
 
     balance = sum(
         e["amount"] if e["entry_type"] == "ENTRADA" else -e["amount"]
@@ -84,19 +82,7 @@ def get_daily_summary_text(db, date: str) -> str:
 
 
 async def send_daily_summary(context, db) -> None:
-    """Send or edit the daily summary in the configured group chat.
-
-    If a summary message already exists for today, edits it. Otherwise,
-    sends a new message and stores its ID for future edits.
-
-    Silently skips if:
-    - Notifier has not been initialized (_config is None).
-    - Group chat ID is not configured (None or 0).
-
-    Args:
-        context: PTB CallbackContext with ``bot`` attribute.
-        db: MilkDatabase instance.
-    """
+    """Send daily summary to configured group chat; deletes previous if present."""
     if _config is None:
         logger.debug("Notifier not initialized; skipping daily summary")
         return
@@ -110,39 +96,30 @@ async def send_daily_summary(context, db) -> None:
     summary_text = get_daily_summary_text(db, today)
     bot = context.bot
 
-    # Check if we already have a summary message for today
+    # Delete existing summary message for today if present
     stored = db.get_daily_summary_message(today)
-
     if stored is not None and stored.get("chat_id") == group_chat_id:
-        # Edit existing message
         try:
-            await bot.edit_message_text(
+            await bot.delete_message(
                 chat_id=group_chat_id,
                 message_id=stored["message_id"],
-                text=summary_text,
-                disable_notification=True,
             )
             logger.info(
-                "Daily summary updated in group chat %s (message %s)",
-                group_chat_id,
-                stored["message_id"],
-            )
-            return
-        except Exception as exc:
-            logger.warning(
-                "Failed to edit daily summary (message %s) in group chat %s: %s",
+                "Deleted previous daily summary (message %s) from group chat %s",
                 stored["message_id"],
                 group_chat_id,
-                exc,
             )
-            # Fall through to send a new message
+        except Exception:
+            logger.debug(
+                "Could not delete previous daily summary (message %s); may have been removed already",
+                stored["message_id"],
+            )
 
     # Send new message
     try:
         msg = await bot.send_message(
             chat_id=group_chat_id,
             text=summary_text,
-            disable_notification=True,
         )
         db.save_daily_summary_message(today, msg.message_id, group_chat_id)
         logger.info(
