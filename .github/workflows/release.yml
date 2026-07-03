@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Stash changes
+        run: |
+          echo "::group::Stash changes"
+          git stash --include-untracked
+          echo "::endgroup::"
+
+      - name: Read __version__
+        run: |
+          echo "::group::Read __version__"
+          VERSION=$(grep -oP '__version__\s*=\s*"\K[^"]+' gaelcarebot/__init__.py)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Current version: $VERSION"
+          echo "::endgroup::"
+
+      - name: Validate format
+        run: |
+          echo "::group::Validate format"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$ ]]; then
+            echo "Error: Version '$VERSION' does not match expected format X.Y.Z-SNAPSHOT"
+            exit 1
+          fi
+          echo "Version format is valid"
+          echo "::endgroup::"
+
+      - name: Calculate release version
+        run: |
+          echo "::group::Calculate release version"
+          RELEASE_VERSION=$(python scripts/bump_version.py release "$VERSION")
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+          echo "Release version: $RELEASE_VERSION"
+          echo "::endgroup::"
+
+      - name: Write release version
+        run: |
+          echo "::group::Write release version"
+          sed -i "s/__version__ = \".*\"/__version__ = \"$RELEASE_VERSION\"/" gaelcarebot/__init__.py
+          echo "Updated __init__.py with version: $RELEASE_VERSION"
+          echo "::endgroup::"
+
+      - name: Commit release
+        run: |
+          echo "::group::Commit release"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add gaelcarebot/__init__.py
+          git commit -m "release: $RELEASE_VERSION"
+          git push
+          echo "::endgroup::"
+
+      - name: Create tag
+        run: |
+          echo "::group::Create tag"
+          git tag "v$RELEASE_VERSION"
+          git push origin "v$RELEASE_VERSION"
+          echo "Created and pushed tag: v$RELEASE_VERSION"
+          echo "::endgroup::"
+
+      - name: Calculate next snapshot
+        run: |
+          echo "::group::Calculate next snapshot"
+          NEXT_SNAPSHOT=$(python scripts/bump_version.py next "$RELEASE_VERSION")
+          echo "NEXT_SNAPSHOT=$NEXT_SNAPSHOT" >> $GITHUB_ENV
+          echo "Next snapshot version: $NEXT_SNAPSHOT"
+          echo "::endgroup::"
+
+      - name: Write next snapshot
+        run: |
+          echo "::group::Write next snapshot"
+          sed -i "s/__version__ = \".*\"/__version__ = \"$NEXT_SNAPSHOT\"/" gaelcarebot/__init__.py
+          echo "Updated __init__.py with version: $NEXT_SNAPSHOT"
+          echo "::endgroup::"
+
+      - name: Commit next snapshot
+        run: |
+          echo "::group::Commit next snapshot"
+          git add gaelcarebot/__init__.py
+          git commit -m "chore: prepare next development version $NEXT_SNAPSHOT"
+          git push
+          echo "::endgroup::"
+
+      - name: Restore stash
+        run: |
+          echo "::group::Restore stash"
+          git stash pop
+          echo "::endgroup::"
