@@ -126,20 +126,25 @@ class TestSendDailySummary:
         self, mock_context: Mock, db_with_summary_table: MilkDatabase
     ) -> None:
         """When stored message exists, delete old then send new."""
-        today = datetime.now().strftime("%Y-%m-%d")
-        db_with_summary_table.save_daily_summary_message(today, 42, -987654321)
+        FIXED_DATE = "2026-07-15"
+        db_with_summary_table.save_daily_summary_message(FIXED_DATE, 42, -987654321)
 
         mock_msg = Mock()
         mock_msg.message_id = 99
         mock_context.bot.send_message.return_value = mock_msg
 
-        await send_daily_summary(mock_context, db_with_summary_table)
+        mock_now = datetime(2026, 7, 15, 12, 0, 0)
+        with patch("gaelcarebot.group_notifier.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.strptime = datetime.strptime
+
+            await send_daily_summary(mock_context, db_with_summary_table)
 
         mock_context.bot.delete_message.assert_called_once_with(
             chat_id=-987654321, message_id=42
         )
         mock_context.bot.send_message.assert_called_once()
-        stored = db_with_summary_table.get_daily_summary_message(today)
+        stored = db_with_summary_table.get_daily_summary_message(FIXED_DATE)
         assert stored["message_id"] == 99
 
     @pytest.mark.asyncio
@@ -147,19 +152,24 @@ class TestSendDailySummary:
         self, mock_context: Mock, db_with_summary_table: MilkDatabase
     ) -> None:
         """When delete fails, should still send the new message."""
-        today = datetime.now().strftime("%Y-%m-%d")
-        db_with_summary_table.save_daily_summary_message(today, 42, -987654321)
+        FIXED_DATE = "2026-07-15"
+        db_with_summary_table.save_daily_summary_message(FIXED_DATE, 42, -987654321)
         mock_context.bot.delete_message.side_effect = Exception("delete failed")
 
         mock_msg = Mock()
         mock_msg.message_id = 99
         mock_context.bot.send_message.return_value = mock_msg
 
-        await send_daily_summary(mock_context, db_with_summary_table)
+        mock_now = datetime(2026, 7, 15, 12, 0, 0)
+        with patch("gaelcarebot.group_notifier.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.strptime = datetime.strptime
+
+            await send_daily_summary(mock_context, db_with_summary_table)
 
         mock_context.bot.delete_message.assert_called_once()
         mock_context.bot.send_message.assert_called_once()
-        stored = db_with_summary_table.get_daily_summary_message(today)
+        stored = db_with_summary_table.get_daily_summary_message(FIXED_DATE)
         assert stored["message_id"] == 99
 
     @pytest.mark.asyncio
