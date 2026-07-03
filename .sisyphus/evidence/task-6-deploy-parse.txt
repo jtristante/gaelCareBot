@@ -1,2 +1,0 @@
-runs-on: self-hosted
-concurrency: {'group': 'deploy', 'cancel-in-progress': False}

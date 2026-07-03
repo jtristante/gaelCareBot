@@ -1,1 +1,0 @@
-'<b>🗓️ Historial de stock</b>\n\n<pre>ID  Fecha        Tipo     Cantidad  Responsable  Notas</pre>'

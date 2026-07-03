@@ -1,2 +1,0 @@
-Columns: ['id', 'tipo', 'cantidad', 'fecha_hora', 'user_id', 'username', 'notas', 'created_at', 'deleted_at']
-deleted_at in cols: True

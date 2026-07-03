@@ -1,2 +1,0 @@
-jobs: ['test', 'build-and-push']
-on: ['push', 'pull_request']
