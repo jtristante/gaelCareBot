@@ -107,11 +107,12 @@ jobs:
         working-directory: /opt/gaelcarebot
         run: |
           sed -i "s/:latest/:${TAG}/" docker-compose.prod.yml
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           if [ "${TAG}" != "latest" ]; then
             echo "Versioned tag detected — waiting for image to be available (max 5 attempts)..."
             for i in $(seq 1 5); do
-              echo "Attempt $i/5 — checking ghcr.io/${{ github.repository }}:${TAG}..."
-              if docker manifest inspect "ghcr.io/${{ github.repository }}:${TAG}" > /dev/null 2>&1; then
+              echo "Attempt $i/5 — checking ghcr.io/${REPO_LOWER}:${TAG}..."
+              if docker manifest inspect "ghcr.io/${REPO_LOWER}:${TAG}" > /dev/null 2>&1; then
                 echo "Image found on attempt $i"
                 break
               fi
