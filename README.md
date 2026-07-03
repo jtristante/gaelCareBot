@@ -87,7 +87,6 @@ python -m gaelcarebot.bot
 | Comando | Descripción |
 |---|---|
 | `/start` | Mensaje de bienvenida e instrucciones |
-| `/help` | Mostrar esta ayuda |
 | `/agregar [cantidad] [notas]` | Registrar una extracción de leche (ml). Sin argumentos abre menú interactivo |
 | `/consumir` | Registrar un consumo de leche (seleccionar de la lista) |
 | `/stock` | Ver historial completo de extracciones |

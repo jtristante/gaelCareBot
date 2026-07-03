@@ -10,14 +10,13 @@ parameter substitution — callers must supply the named placeholders.
 WELCOME_MSG = (
     "👋 ¡Bienvenido a GaelCareBot! 🤱\n\n"
     "Gestiona el stock de leche materna de tu bebé.\n\n"
-    "Usa /help para ver los comandos disponibles."
+    "Usa /start para ver los comandos disponibles."
 )
 
 # Help message listing all commands.
 HELP_MSG = (
     "📋 <b>Comandos disponibles:</b>\n\n"
     "/start — Mensaje de bienvenida e instrucciones\n"
-    "/help — Mostrar esta ayuda\n"
     "/agregar <code>[cantidad]</code> <code>[notas]</code> — Registrar leche extraída. Sin argumentos abre menú interactivo\n"
     "/consumir — Registrar leche consumida (seleccionar de la lista)\n"
     "/stock — Ver historial completo\n"

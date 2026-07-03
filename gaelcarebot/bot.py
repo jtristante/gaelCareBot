@@ -20,7 +20,6 @@ from gaelcarebot.handlers.edit import edit_conv_handler
 from gaelcarebot.handlers.error import error_handler
 from gaelcarebot.handlers.start import start_command
 from gaelcarebot.handlers.stock import stock_command
-from gaelcarebot.handlers.help import help_command
 from gaelcarebot.handlers.total import total_command
 
 logger = logging.getLogger(__name__)
@@ -51,7 +50,6 @@ def main() -> None:
     application.bot_data["db"] = db
 
     application.add_handler(CommandHandler("start", start_command))
-    application.add_handler(CommandHandler("help", help_command))
     application.add_handler(add_conv_handler)
     application.add_handler(consume_conv_handler)
     application.add_handler(CommandHandler("stock", stock_command))
