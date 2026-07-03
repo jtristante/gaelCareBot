@@ -20,6 +20,10 @@
 
 - **Workflow**: manejo de entradas stash vacías en el flujo de release
 - **Notificaciones**: formato de resumen revertido al clásico (sin timestamps) para mejor legibilidad
+- **Tests**: corregido flakiness en tests de resumen diario causado por dependencias de zona horaria
+- **CI**: merge del workflow de deploy en el CI con loop de reintentos y sistema de rollback para v2.0.0
+- **CI**: cambio de `buildx imagetools` a `docker manifest inspect` para verificar imágenes
+- **Release**: uso de Personal Access Token (PAT) para git push y activar workflows de CI
 
 ### Eliminado
 
