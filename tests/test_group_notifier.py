@@ -2,31 +2,283 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+from gaelcarebot.config import Config
+from gaelcarebot.db import MilkDatabase
 from gaelcarebot.group_notifier import (
+    _config,
     get_daily_summary_text,
     init_notifier,
     send_daily_summary,
+)
+from gaelcarebot.messages import (
+    SUMMARY_BALANCE,
+    SUMMARY_HEADER,
+    SUMMARY_NO_ACTIVITY,
 )
 
 
 class TestGetDailySummaryText:
     """Tests for get_daily_summary_text()."""
 
-    def test_placeholder(self) -> None:
-        """Placeholder — real tests added in Tasks 5 and 6."""
-        assert True
+    def test_entries_chronological_order(self, db_with_entries: MilkDatabase) -> None:
+        """Entries should appear in chronological order (oldest first)."""
+        result = get_daily_summary_text(db_with_entries, "2026-05-19")
+        lines = result.split("\n")
+
+        # Find the entry lines (skip header, balance is last)
+        entry_lines = [l for l in lines[1:-1] if l.strip()]
+
+        # Should have 3 entries: ENTRADA at 10:00, ENTRADA at 11:00, SALIDA at 12:00
+        assert len(entry_lines) == 3
+
+        # First entry should be 10:00 (oldest)
+        assert "10:00" in entry_lines[0]
+        # Second entry should be 11:00
+        assert "11:00" in entry_lines[1]
+        # Third entry should be 12:00 (newest)
+        assert "12:00" in entry_lines[2]
+
+    def test_entry_includes_time(self, db_with_entries: MilkDatabase) -> None:
+        """Each entry line should include HH:MM timestamp."""
+        result = get_daily_summary_text(db_with_entries, "2026-05-19")
+
+        # Check that time format HH:MM appears in the result
+        assert "10:00" in result
+        assert "11:00" in result
+        assert "12:00" in result
+
+    def test_entry_format(self, db_with_entries: MilkDatabase) -> None:
+        """Entry format should be: time - sign amount ml (type) - user."""
+        result = get_daily_summary_text(db_with_entries, "2026-05-19")
+
+        # ENTRADA should have + sign and "extracción"
+        assert "+200 ml (extracción)" in result
+        assert "+150 ml (extracción)" in result
+
+        # SALIDA should have - sign and "consumo"
+        assert "-100 ml (consumo)" in result
+
+        # Should include usernames
+        assert "test_user" in result
+        assert "other_user" in result
+
+    def test_balance_unchanged(self, db_with_entries: MilkDatabase) -> None:
+        """Balance line should still be present and correct."""
+        result = get_daily_summary_text(db_with_entries, "2026-05-19")
+
+        # Balance should be: 200 + 150 - 100 = 250
+        assert "Balance: 250 ml" in result
+
+    def test_no_activity_message(self, db: MilkDatabase) -> None:
+        """Returns SUMMARY_NO_ACTIVITY when no entries exist."""
+        result = get_daily_summary_text(db, "2026-05-19")
+        assert result == SUMMARY_NO_ACTIVITY
 
 
 class TestSendDailySummary:
     """Tests for send_daily_summary()."""
 
-    def test_placeholder(self) -> None:
-        """Placeholder — real tests added in Task 5."""
-        assert True
+    @pytest.fixture(autouse=True)
+    def setup_config(self, config: Config) -> None:
+        """Initialize notifier with test config before each test."""
+        init_notifier(config)
+        yield
+        # Reset _config after test
+        global _config
+        _config = None
+
+    @pytest.fixture
+    def db_with_summary_table(self, db: MilkDatabase) -> MilkDatabase:
+        """Extend the in-memory db with the daily_summary_messages table."""
+        db.conn.execute(
+            """CREATE TABLE IF NOT EXISTS daily_summary_messages (
+                date TEXT PRIMARY KEY,
+                message_id INTEGER NOT NULL,
+                chat_id INTEGER NOT NULL
+            )"""
+        )
+        db.conn.commit()
+        return db
+
+    @pytest.mark.asyncio
+    async def test_first_call_sends_new_message(
+        self, mock_context: Mock, db_with_summary_table: MilkDatabase
+    ) -> None:
+        """When no stored message exists, send_message should be called."""
+        # Mock the message returned by send_message
+        mock_msg = Mock()
+        mock_msg.message_id = 123
+        mock_context.bot.send_message.return_value = mock_msg
+
+        await send_daily_summary(mock_context, db_with_summary_table)
+
+        # Should call send_message
+        mock_context.bot.send_message.assert_called_once()
+        call_kwargs = mock_context.bot.send_message.call_args.kwargs
+        assert call_kwargs["chat_id"] == -987654321  # from test config
+        assert call_kwargs["disable_notification"] is True
+
+        # Should NOT call edit_message_text
+        mock_context.bot.edit_message_text.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_second_call_edits_existing_message(
+        self, mock_context: Mock, db_with_summary_table: MilkDatabase
+    ) -> None:
+        """When a stored message exists, edit_message_text should be called."""
+        # Store a message first
+        db_with_summary_table.save_daily_summary_message(
+            datetime.now().strftime("%Y-%m-%d"), 42, -987654321
+        )
+
+        await send_daily_summary(mock_context, db_with_summary_table)
+
+        # Should call edit_message_text
+        mock_context.bot.edit_message_text.assert_called_once()
+        call_kwargs = mock_context.bot.edit_message_text.call_args.kwargs
+        assert call_kwargs["chat_id"] == -987654321
+        assert call_kwargs["message_id"] == 42
+        assert call_kwargs["disable_notification"] is True
+
+        # Should NOT call send_message
+        mock_context.bot.send_message.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_edit_failure_falls_back_to_send(
+        self, mock_context: Mock, db_with_summary_table: MilkDatabase
+    ) -> None:
+        """When edit fails, should fall back to sending a new message."""
+        # Store a message first
+        db_with_summary_table.save_daily_summary_message(
+            datetime.now().strftime("%Y-%m-%d"), 42, -987654321
+        )
+
+        # Make edit fail
+        mock_context.bot.edit_message_text.side_effect = Exception("edit failed")
+
+        # Mock the message returned by send_message
+        mock_msg = Mock()
+        mock_msg.message_id = 99
+        mock_context.bot.send_message.return_value = mock_msg
+
+        await send_daily_summary(mock_context, db_with_summary_table)
+
+        # Should try to edit first
+        mock_context.bot.edit_message_text.assert_called_once()
+
+        # Should fall back to send_message
+        mock_context.bot.send_message.assert_called_once()
+
+        # Should save the new message ID
+        stored = db_with_summary_table.get_daily_summary_message(
+            datetime.now().strftime("%Y-%m-%d")
+        )
+        assert stored is not None
+        assert stored["message_id"] == 99
+
+    @pytest.mark.asyncio
+    async def test_date_change_sends_new_message(
+        self, mock_context: Mock, db_with_summary_table: MilkDatabase
+    ) -> None:
+        """When date changes, should send new message even if old date has stored message."""
+        # Store a message for yesterday
+        db_with_summary_table.save_daily_summary_message("2026-07-02", 42, -987654321)
+
+        # Mock datetime.now to return today (2026-07-03)
+        mock_now = datetime(2026, 7, 3, 12, 0, 0)
+
+        with patch("gaelcarebot.group_notifier.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.strptime = datetime.strptime
+
+            # Mock the message returned by send_message
+            mock_msg = Mock()
+            mock_msg.message_id = 100
+            mock_context.bot.send_message.return_value = mock_msg
+
+            await send_daily_summary(mock_context, db_with_summary_table)
+
+        # Should call send_message for the new date
+        mock_context.bot.send_message.assert_called_once()
+
+        # Should NOT call edit_message_text
+        mock_context.bot.edit_message_text.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_group_chat_configured_skips(
+        self, mock_context: Mock, db: MilkDatabase, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When group_chat_id is None or 0, should skip without calling bot methods."""
+        # Create config with no group_chat_id
+        test_config = Config(
+            bot_token="test_token",
+            authorized_user_ids={123},
+            group_chat_id=0,
+            db_path=":memory:",
+            timezone="Europe/Madrid",
+            conversation_timeout=300,
+        )
+        init_notifier(test_config)
+
+        await send_daily_summary(mock_context, db)
+
+        # Should not call any bot methods
+        mock_context.bot.send_message.assert_not_called()
+        mock_context.bot.edit_message_text.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_disable_notification_passed(
+        self, mock_context: Mock, db_with_summary_table: MilkDatabase
+    ) -> None:
+        """disable_notification=True should be passed to both send and edit."""
+        # Test with new message (no stored message)
+        mock_msg = Mock()
+        mock_msg.message_id = 123
+        mock_context.bot.send_message.return_value = mock_msg
+
+        await send_daily_summary(mock_context, db_with_summary_table)
+
+        send_call = mock_context.bot.send_message.call_args
+        assert send_call.kwargs["disable_notification"] is True
+
+        # Reset mocks
+        mock_context.bot.reset_mock()
+
+        # Store a message for edit test
+        db_with_summary_table.save_daily_summary_message(
+            datetime.now().strftime("%Y-%m-%d"), 456, -987654321
+        )
+
+        await send_daily_summary(mock_context, db_with_summary_table)
+
+        edit_call = mock_context.bot.edit_message_text.call_args
+        assert edit_call.kwargs["disable_notification"] is True
+
+
+@pytest.mark.asyncio
+async def test_notifier_not_initialized_skips(
+    mock_context: Mock, db: MilkDatabase
+) -> None:
+    """When _config is None, should skip without calling bot methods."""
+    # Ensure _config is None (should be from teardown of previous tests)
+    import gaelcarebot.group_notifier as gn
+    original_config = gn._config
+    gn._config = None
+
+    try:
+        await send_daily_summary(mock_context, db)
+
+        # Should not call any bot methods
+        mock_context.bot.send_message.assert_not_called()
+        mock_context.bot.edit_message_text.assert_not_called()
+    finally:
+        # Restore original config
+        gn._config = original_config
 
 
 @pytest.fixture

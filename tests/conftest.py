@@ -129,11 +129,12 @@ def unauthorized_update() -> Mock:
 def patch_config(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set environment variables needed by ``Config``.
 
-    Sets ``BOT_TOKEN`` and ``AUTHORIZED_USER_IDS`` before the test and
-    cleans them up after the test yields.
+    Sets ``BOT_TOKEN``, ``AUTHORIZED_USER_IDS``, and ``GROUP_CHAT_ID``
+    before the test and cleans them up after the test yields.
     """
     monkeypatch.setenv("BOT_TOKEN", "test")
     monkeypatch.setenv("AUTHORIZED_USER_IDS", "123")
+    monkeypatch.setenv("GROUP_CHAT_ID", "-987654321")
 
 
 @pytest.fixture
