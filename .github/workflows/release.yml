@@ -107,5 +107,5 @@ jobs:
       - name: Restore stash
         run: |
           echo "::group::Restore stash"
-          git stash pop
+          git stash pop 2>/dev/null || echo "No stash to restore"
           echo "::endgroup::"
