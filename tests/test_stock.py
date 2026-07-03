@@ -47,6 +47,7 @@ async def test_stock_with_entries(db, mock_update, mock_context, auth_init):
     assert "test_user" in call_args
     assert "other_user" not in call_args
     assert "📭 No hay entradas registradas." not in call_args
+    assert "<b>Total: 350 ml</b>" in call_args
     assert len(call_args) <= 4096
 
 
@@ -69,6 +70,7 @@ async def test_stock_pagination(db, mock_update, mock_context, auth_init):
 
     assert "... y " in call_args
     assert "más..." in call_args
+    assert "<b>Total:" in call_args
     assert len(call_args) <= 4096
 
 
@@ -130,3 +132,52 @@ async def test_stock_uses_html_parse_mode(db, mock_update, mock_context, auth_in
     await stock_command(mock_update, mock_context)
 
     mock_update.message.reply_html.assert_awaited_once()
+
+
+async def test_stock_total_appears_after_pre(db, mock_update, mock_context, auth_init):
+    """Total appears AFTER </pre>, never inside the table."""
+    db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", None)
+
+    mock_context.bot_data["db"] = db
+
+    await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()
+    call_args = mock_update.message.reply_html.call_args[0][0]
+    assert "</pre>" in call_args
+    assert "<b>Total:" in call_args
+    assert call_args.index("</pre>") < call_args.index("<b>Total:")
+
+
+async def test_stock_total_value_matches_db(db, mock_update, mock_context, auth_init):
+    """Total value matches db.get_total_stock()."""
+    db.add_entry("ENTRADA", 100, "2026-05-19T08:00:00", 123, "user_a", None)
+    db.add_entry("ENTRADA", 200, "2026-05-19T09:00:00", 123, "user_a", None)
+    db.add_entry("ENTRADA", 300, "2026-05-19T10:00:00", 456, "user_b", None)
+
+    mock_context.bot_data["db"] = db
+
+    await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()
+    call_args = mock_update.message.reply_html.call_args[0][0]
+    assert "<b>Total: 600 ml</b>" in call_args
+
+
+async def test_stock_total_error_handling(db, mock_update, mock_context, auth_init):
+    """When get_total_stock() fails, table is shown without total."""
+    import unittest.mock
+
+    db.add_entry("ENTRADA", 200, "2026-05-19T10:00:00", 123, "test_user", None)
+
+    mock_context.bot_data["db"] = db
+
+    with unittest.mock.patch.object(db, "get_total_stock", side_effect=Exception("DB error")):
+        await stock_command(mock_update, mock_context)
+
+    mock_update.message.reply_html.assert_awaited_once()
+    call_args = mock_update.message.reply_html.call_args[0][0]
+    assert "<pre>" in call_args
+    assert "</pre>" in call_args
+    assert "200ml" in call_args
+    assert "<b>Total:" not in call_args
