@@ -108,21 +108,23 @@ jobs:
         run: |
           sed -i "s/:latest/:${TAG}/" docker-compose.prod.yml
           if [ "${TAG}" != "latest" ]; then
-            echo "Versioned tag detected — waiting for image to be available..."
-            for i in 5 10 20 40 80 160 320; do
-              if docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${TAG} > /dev/null 2>&1; then
-                echo "Image found on attempt with ${i}s wait"
+            echo "Versioned tag detected — waiting for image to be available (max 5 attempts)..."
+            for i in $(seq 1 5); do
+              echo "Attempt $i/5 — checking ghcr.io/${{ github.repository }}:${TAG}..."
+              if docker manifest inspect "ghcr.io/${{ github.repository }}:${TAG}" > /dev/null 2>&1; then
+                echo "Image found on attempt $i"
                 break
               fi
-              echo "Attempt failed — retrying in ${i}s..."
-              sleep "$i"
+              if [ "$i" -eq 5 ]; then
+                echo "Image not found after 5 attempts"
+                exit 1
+              fi
+              echo "Not ready — retrying in 30s..."
+              sleep 30
             done
           fi
           docker compose -f docker-compose.yml -f docker-compose.prod.yml pull gaelcarebot
-          if [ $? -ne 0 ]; then
-            echo "Failed to pull image after all retries"
-            exit 1
-          fi
+          echo "Image pulled successfully"
 
       - name: Build sqlite-web
         working-directory: /opt/gaelcarebot
