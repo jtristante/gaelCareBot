@@ -83,7 +83,7 @@ async def _add_start_impl(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
             if _SEND_DAILY_SUMMARY_AVAILABLE and send_daily_summary is not None:
                 try:
-                    await send_daily_summary(context.bot, db)
+                    await send_daily_summary(context, db)
                 except Exception as e:
                     logger.warning("Failed to send daily summary: %s", e)
 
@@ -189,7 +189,7 @@ async def confirm_add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
         if _SEND_DAILY_SUMMARY_AVAILABLE and send_daily_summary is not None:
             try:
-                await send_daily_summary(context.bot, db)
+                await send_daily_summary(context, db)
             except Exception as e:
                 logger.warning("Failed to send daily summary: %s", e)
 

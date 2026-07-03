@@ -188,7 +188,7 @@ async def confirm_reversal(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             # Try to send daily summary notification (gracefully handle if not available)
             if _SEND_DAILY_SUMMARY_AVAILABLE and send_daily_summary is not None:
                 try:
-                    await send_daily_summary(context.bot, db)
+                    await send_daily_summary(context, db)
                 except Exception as e:
                     logger.warning("Failed to send daily summary: %s", e)
 

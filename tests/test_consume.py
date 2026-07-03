@@ -446,7 +446,7 @@ class TestReversalFlowInteractions:
             result = await confirm_reversal(update, ctx)
 
             # Verify notification was sent
-            mock_notify.assert_called_once_with(ctx.bot, mock_db)
+            mock_notify.assert_called_once_with(ctx, mock_db)
 
         # Verify success message
         update.callback_query.edit_message_text.assert_called_once_with(
