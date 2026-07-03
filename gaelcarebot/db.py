@@ -34,6 +34,14 @@ CREATE TABLE IF NOT EXISTS milk_entries (
 )
 """
 
+_SUMMARY_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS daily_summary_messages (
+    date TEXT PRIMARY KEY,
+    message_id INTEGER NOT NULL,
+    chat_id INTEGER NOT NULL
+)
+"""
+
 
 def dict_from_row(row: sqlite3.Row) -> dict[str, Any]:
     """Convert a sqlite3.Row to a plain dict."""
@@ -70,8 +78,9 @@ class MilkDatabase:
         self._migrate_schema()
 
     def _create_tables(self) -> None:
-        """Create the milk_entries table if it does not exist."""
+        """Create the milk_entries and daily_summary_messages tables if they do not exist."""
         self.conn.execute(_TABLE_SQL)
+        self.conn.execute(_SUMMARY_TABLE_SQL)
         self.conn.commit()
 
     def _migrate_schema(self) -> None:
@@ -154,6 +163,13 @@ class MilkDatabase:
             self.conn.execute(
                 "ALTER TABLE milk_entries RENAME COLUMN fecha_hora TO add_at"
             )
+            self.conn.commit()
+        except sqlite3.OperationalError:
+            pass
+
+        # Backfill daily_summary_messages for databases created before this migration.
+        try:
+            self.conn.execute(_SUMMARY_TABLE_SQL)
             self.conn.commit()
         except sqlite3.OperationalError:
             pass
@@ -453,6 +469,51 @@ class MilkDatabase:
             "total_consumptions": total_consumptions,
             "balance": total_additions - total_consumptions,
         }
+
+    def get_daily_summary_message(self, date: str) -> dict[str, Any] | None:
+        """Retrieve stored summary message for a given date.
+
+        Args:
+            date: ISO date string (YYYY-MM-DD).
+
+        Returns:
+            Dict with message_id and chat_id keys, or None if no message stored.
+        """
+        cur = self.conn.execute(
+            "SELECT message_id, chat_id FROM daily_summary_messages WHERE date = ?",
+            (date,),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def save_daily_summary_message(self, date: str, message_id: int, chat_id: int) -> None:
+        """Store or update a daily summary message reference.
+
+        Uses INSERT OR REPLACE so calling multiple times for the same date
+        simply updates the stored message_id.
+
+        Args:
+            date: ISO date string (YYYY-MM-DD).
+            message_id: Telegram message ID.
+            chat_id: Telegram chat ID.
+        """
+        self.conn.execute(
+            "INSERT OR REPLACE INTO daily_summary_messages (date, message_id, chat_id) VALUES (?, ?, ?)",
+            (date, message_id, chat_id),
+        )
+        self.conn.commit()
+
+    def delete_daily_summary_message(self, date: str) -> None:
+        """Remove stored summary message reference for a given date.
+
+        Args:
+            date: ISO date string (YYYY-MM-DD).
+        """
+        self.conn.execute(
+            "DELETE FROM daily_summary_messages WHERE date = ?",
+            (date,),
+        )
+        self.conn.commit()
 
     def close(self) -> None:
         """Close the database connection."""

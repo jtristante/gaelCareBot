@@ -95,6 +95,7 @@ def mock_context() -> Mock:
     """
     ctx = Mock()
     ctx.bot.send_message = AsyncMock()
+    ctx.bot.edit_message_text = AsyncMock()
     ctx.bot_data = {}
     ctx.user_data = {}
     ctx.args = []

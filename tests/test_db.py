@@ -870,3 +870,50 @@ class TestMigrationTransactionsToMilkEntries:
             assert cur.fetchone() is None, "transactions table should not exist"
         finally:
             db.close()
+
+
+class TestDailySummaryMessagesTable:
+    """Test suite for the daily_summary_messages table."""
+
+    def test_table_exists_after_init(self, db: MilkDatabase) -> None:
+        """daily_summary_messages table is created during MilkDatabase init."""
+        cur = db.conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='daily_summary_messages'"
+        )
+        assert cur.fetchone() is not None, "daily_summary_messages table should exist"
+
+    def test_table_schema(self, db: MilkDatabase) -> None:
+        """daily_summary_messages has the expected columns and constraints."""
+        cur = db.conn.execute("PRAGMA table_info(daily_summary_messages)")
+        columns = {row[1]: row for row in cur.fetchall()}
+
+        assert "date" in columns, "date column should exist"
+        assert columns["date"][2] == "TEXT", "date should be TEXT"
+        assert columns["date"][5] == 1, "date should be PRIMARY KEY"
+        assert "message_id" in columns, "message_id column should exist"
+        assert columns["message_id"][2] == "INTEGER", "message_id should be INTEGER"
+        assert columns["message_id"][3] == 1, "message_id should be NOT NULL"
+        assert "chat_id" in columns, "chat_id column should exist"
+        assert columns["chat_id"][2] == "INTEGER", "chat_id should be INTEGER"
+        assert columns["chat_id"][3] == 1, "chat_id should be NOT NULL"
+
+    def test_migration_backfill(self) -> None:
+        """A database created without the table gets it via _migrate_schema()."""
+        db = MilkDatabase(":memory:")
+        try:
+            db.conn.execute("DROP TABLE IF EXISTS daily_summary_messages")
+            db.conn.commit()
+
+            cur = db.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='daily_summary_messages'"
+            )
+            assert cur.fetchone() is None
+
+            db._migrate_schema()
+
+            cur = db.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='daily_summary_messages'"
+            )
+            assert cur.fetchone() is not None, "migration should recreate the table"
+        finally:
+            db.close()

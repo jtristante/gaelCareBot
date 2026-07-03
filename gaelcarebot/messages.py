@@ -118,6 +118,9 @@ SUMMARY_BALANCE = "  Balance: {balance} ml"
 # Shown when there is no activity for the requested day.
 SUMMARY_NO_ACTIVITY = "Sin actividad registrada."
 
+# Entry line for the accumulative daily summary (time-prefixed, chronological).
+SUMMARY_ENTRY_LINE = "  {time} - {sign}{amount} ml ({entry_type}) - {user}"
+
 # ── Table formatting ────────────────────────────────────────────────────────
 
 # Header row for the stock history table.
